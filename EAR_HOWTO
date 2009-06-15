@@ -1,0 +1,142 @@
+/*=======================How-To Talk to EAR============================
+
+CREDITS: Skip White is the original author of this document, but I am
+updating it as necessary with relevant information.
+
+EAR is the Emergency Alert Radio manufactured by Multi-Technical 
+Services, Inc. of Clayton, North Carolina. This document is
+provided as-is, with no promises of any kind.
+
+You can communicate with EAR using any terminal program - handy for
+manually doing what you want your program to do. EAR uses no hardware
+handshaking, and does not know about x-on/x-off. Early models (5100)
+use 1200 bps, later models (5100A, 5120, 5220) use 2400 bps. Note -
+Hilgrave's HyperTerm (ships with MS Windows) doesn't work as well as
+most other terminal programs in this application. (I use CRT from 
+www.vandyke.com - it works well and won't break the budget.)
+(Note, this is a Windows program, for Macintosh, use I recommend ZTerm)
+
+To read EAR's copyright notice:
+send EAR a lower-case c
+	EAR responds with a brief text message
+	(Note: HyperTerm has a lot of trouble reading this...)
+	(Note: In firmware later than 10/04/1999 the text is not garbled)
+
+To verify a connection to EAR:
+send EAR a question mark (it may take several before EAR responds)
+	Weather EARS send WX<cr/lf> (All models)
+	FM EAR sends FM<cr/lf> (Early model)
+	FM EAR II sends F2<cr/lf> (Current model)
+
+To read the contents of the non-volatile memory:
+send EAR a lower-case d
+	EAR sends 512 data bytes, arranged per the table below
+
+To simulate SAME message reception:
+send EAR a lower-case t  or  hold the button down for 3-5 seconds
+	(Note: hold button longer than 5 sec to reset the CPU. Best way to
+	do the test from the front panel is hold button until lamp changes
+	to flashing red, release after first red-off-red sequence)
+
+	EAR 	unmutes audio
+		sets alarm_active (on accy port) high (Early model in metal cabinet)
+		closes relay contacts (at mini-jack) (Current model in plastic cabinet)
+		sends X10 ON command
+		sends test data to serial out port (see below)
+		sends X10 OFF command
+		sets alarm_active low / or / opens relay contacts
+		mutes audio
+
+  TEST DATA FORMAT
+	header sent three times, one sec pause between each:
+	[0x00][0xab x 16]ZCZC-WXR-RWT-000000+0015-0000000-TEST/EAR[0x0d 0x0a]
+
+        (three second pause after 3rd header)
+        (EARs after 04/2001 pause 10 sec)
+
+	eom is sent three times, one sec pause between each:
+	[0x00][0xab x 16]NNNN[0x0d 0x0a]
+        
+  **NOTE: the null character [0x00] at the beginning of each data burst 
+    and the CR/LF characters [0x0D 0x0A] at the end are not present in 
+    the actual SAME transmissions. They are included in the simulation
+    to allow easier debugging of external programs which monitor EARs
+    serial output data stream.
+
+To program EAR
+	send EAR a lower case p
+	wait for EAR to respond with bang (!)
+	send EAR 512 bytes of data, arranged per the table
+        it is safe to disregard bytes 000-235; write 0x01
+	*** pause 10 mS between characters to allow EAR's
+	*** memory write to complete. flash is so slow...
+        after 512th byte EAR resets and sends asterisk (*)
+  *** NEVER write 0x00 to any byte!!
+
+// -address-   -contents-
+// 000 - 235 : last received message bytes (from ZCZC- through +)
+//       236 : main freq channel (wxbyte = 0x01...0x07 - not ASCII chars!)
+//       237 : alt  freq channel (wxfreq = ((wxbyte-1)*.025) + 162.400 
+// 238 - 243 : fips0 (6 ASCII digits as PSSCCC where:    )write 0x01 if unused
+// 244 - 249 : fips1 (P is the sub-portion of the area   )write 0x01 if unused
+// 250 - 255 : fips2 (SS is the two digit state code     )write 0x01 if unused
+// 256 - 261 : fips3 (CCC is the three digit county code )write 0x01 if unused
+//       262 : X10 house code (early EARs need mod) write 0x01 if unused
+//       263 : X10 unit code  (for PL513 interface) write 0x01 if unused
+//       264 : unused-spare-reserved-do not use this byte - write 0x01
+//       265 : fm primary   db0 (synth setup byte 0) \
+//       266 : fm primary   db1 (synth setup byte 1) |not used in
+//       267 : fm alternate db0 (synth setup byte 0) |Weather EAR
+//       268 : fm alternate db1 (synth setup byte 1)/ write 0x01
+//       269 : eom reset mode 0=man 1=auto
+//       270 : alt freq  mode 0=off 1=auto
+// 271 - 273 : event  0 - three letter event code, upper-case only
+//    ...    : (event_num * 3 + 271)  Fill unused bytes with 0x01
+// 509 - 511 : event 79 
+//-----------------------------------------------------------------------
+
+EAR may require several command attempts before it responds because the
+serial port in EAR isn't an interrupt driven model. The only usable
+interrupt in the processor was already busy, so we had to do a polled
+input routine. It is possible for the polling to miss an incoming
+character. 
+
+
+EAR can send X-10 style data to a PL-513 interface module, available
+from several X-10 module distributors. A custom interface cable is
+available from MTS. (919 553 2995) The X-10 ON command is sent when
+a selected event is received. The OFF command is sent when the speaker
+mutes, either at EOM or when the button is pressed, depending on the
+configuration of the receiver.
+
+  (unit HOUSE) code byte values:
+  x10code(1 A) = 71 0x47        x10code(9 I)  = 79 0x4F
+  x10code(2 B) = 72 0x48        x10code(10 J) = 80 0x50  
+  x10code(3 C) = 69 0x45        x10code(11 K) = 77 0x4D
+  x10code(4 D) = 70 0x46        x10code(12 L) = 78 0x4E
+  x10code(5 E) = 73 0x49        x10code(13 M) = 65 0x41
+  x10code(6 F) = 74 0x4A        x10code(14 N) = 66 0x42
+  x10code(7 G) = 75 0x4B        x10code(15 O) = 67 0x43
+  x10code(8 H) = 76 0x4C        x10code(16 P) = 68 0x44
+
+Write the correct code to the unit/house value. (Example: for Unit and
+house code 9 B, write 0x4F 0x48.)
+  
+Current FM EARs (Model 5220) do not use the 4 bytes 265...268
+These EARs use an index value from 1 to 200 to specify the fm
+broadcast frequency. Index 1 = 89.1 MHz, Index 200 = 107.9 MHz.
+Here's how to transpose frequency and index:
+
+     frequency = 87.9 + (index * 0.2)
+     index = (frequency - 87.9) / 0.2
+
+***FIXME: Provide more information on how to write the older models,
+          as well as where to write the index on the newer models.
+***NOTE:  The orignal FM EAR is not common any more, and there are only
+          a few currently in service.  It would still be wise to support
+          these models.
+
+
+
+Revision History:
+EAR_HOWTO ver 0.2 last change 09/21/2001 sw*/
