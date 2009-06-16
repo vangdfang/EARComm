@@ -64,21 +64,103 @@ string Data::readData(QProgressBar &bar)
     serial.SetParity(SerialStreamBuf::PARITY_NONE);
     serial.SetCharSize(SerialStreamBuf::CHAR_SIZE_8);
     serial.SetFlowControl(SerialStreamBuf::FLOW_CONTROL_NONE);
-    serial << "dddd";
-    char c;
-    for(int i=0;i<512;i++)
+    serial.SetVTime(100);
+    serial.SetVMin(0);
+    char c=0;
+    bool readFailed=true;
+
+    for(int i=0;i<50;i++)
     {
-        serial.get(c);
-        buf.append(1, c);
-        cout << c;
-        bar.setValue((i+1)*100/512);
+        serial << "d";
+
+        for(int j=0;j<512;j++)
+        {
+            serial.get(c);
+            if(c == 0 && readFailed == true)
+            {
+                j=512;
+                usleep(5000);                
+            }
+            else
+            {
+                readFailed=false;
+                buf.append(1, c);
+                bar.setValue((j+1)*100/512);
+                QApplication::processEvents();
+            }
+        }
+        if(!readFailed)
+        {
+            i=50;
+        }
     }
-    cout << endl;
+    cout << buf << endl;
     serial.Close();
 
     return buf;
 }
 
+int Data::detectEAR()
+{
+    string buf;
+
+    SerialStream serial("/dev/ttyUSB0");
+    serial.SetBaudRate(SerialStreamBuf::BAUD_2400);
+    serial.SetNumOfStopBits(1);
+    serial.SetParity(SerialStreamBuf::PARITY_NONE);
+    serial.SetCharSize(SerialStreamBuf::CHAR_SIZE_8);
+    serial.SetFlowControl(SerialStreamBuf::FLOW_CONTROL_NONE);
+    serial.SetVTime(100);
+    serial.SetVMin(0);
+    char c=0;
+    bool readFailed=true;
+
+    for(int i=0;i<50;i++)
+    {
+        serial << "?";
+
+        for(int j=0;j<2;j++)
+        {
+            serial.get(c);
+            if(c == 0 && readFailed==true)
+            {
+                j=2;
+                usleep(5000);
+            }
+            else
+            {
+                readFailed=false;
+                buf.append(1, c);
+            }
+        }
+        if(!readFailed)
+        {
+            i=50;
+        }
+    }
+    cout << buf << endl;
+    serial.Close();
+
+    if(buf == "WX")
+    {
+        cout << "Got Weather EAR" << endl;
+        return WX_EAR;
+    }
+    else if(buf == "FM")
+    {
+        cout << "Got FM EAR" << endl;
+        return FM_EAR;
+    }
+    else if(buf == "F2")
+    {
+        cout << "Got FM EAR rev 2" << endl;
+        return F2_EAR;
+    }
+
+    return -1;
+}
+
+#if 0
 void Data::parseData(string cfg)
 {
 	cout << "Primary: " << (162.400 + ((cfg.at(236)-1)*.025)) << endl;
@@ -122,55 +204,113 @@ void Data::parseData(string cfg)
 		}
 	}
 }
+#endif
  
 bool Data::loadFIPS()
 {
-	ifstream data;
-	string line;
-	string::size_type pos, pos2;
-        sFIPS tmp;
+    ifstream data;
+    string line;
+    string::size_type pos, pos2;
+    sFIPS tmp;
 
-	data.open("fips.dat");
-	if(!data)
-	{
-		cout << "Error opening FIPS file" << endl;
-		return false;
-	}
-	while(getline(data, line))
-	{
-		pos = line.find(",", 0);
-                tmp.state = line.substr(0, pos);
-		pos2 = line.find(",", pos+1);
-                tmp.stateCode = line.substr(pos+1, 2);
-		pos = line.find(",", pos2+1);
-                tmp.countyCode = line.substr(pos2+1, pos-pos2-1);
-                tmp.county = line.substr(pos+1);
-                fips.push_back(tmp);
-	}
-	
-	return true;
+    data.open("fips.dat");
+    if(!data)
+    {
+        cout << "Error opening FIPS file" << endl;
+        return false;
+    }
+    while(getline(data, line))
+    {
+        pos = line.find(",", 0);
+        tmp.state = line.substr(0, pos);
+        pos2 = line.find(",", pos+1);
+        tmp.stateCode = line.substr(pos+1, 2);
+        pos = line.find(",", pos2+1);
+        tmp.countyCode = line.substr(pos2+1, pos-pos2-1);
+        tmp.county = line.substr(pos+1);
+        fips.push_back(tmp);
+    }
+
+    return true;
 }
 
 bool Data::loadEvents()
 {
-	ifstream data;
-	string line;
-	string::size_type pos;
-        sEvent tmp;
+    ifstream data;
+    string line;
+    string::size_type pos;
+    sEvent tmp;
 
-	data.open("events.dat");
-	if(!data)
-	{
-		cout << "Error opening events file" << endl;
-		return false;
-	}
-	while(getline(data, line))
-	{
-		pos = line.find(",", 0);
-                tmp.eventCode = line.substr(0, pos);
-                tmp.eventText = line.substr(pos+1);
-                events.push_back(tmp);
+    data.open("events.dat");
+    if(!data)
+    {
+        cout << "Error opening events file" << endl;
+        return false;
+    }
+    while(getline(data, line))
+    {
+        pos = line.find(",", 0);
+        tmp.eventCode = line.substr(0, pos);
+        tmp.eventText = line.substr(pos+1);
+        events.push_back(tmp);
+    }
+
+    return true;
+}
+
+void Data::sendTest()
+{
+    SerialStream serial("/dev/ttyUSB0");
+    serial.SetBaudRate(SerialStreamBuf::BAUD_2400);
+    serial.SetNumOfStopBits(1);
+    serial.SetParity(SerialStreamBuf::PARITY_NONE);
+    serial.SetCharSize(SerialStreamBuf::CHAR_SIZE_8);
+    serial.SetFlowControl(SerialStreamBuf::FLOW_CONTROL_NONE);
+    serial.SetVTime(100);
+    serial.SetVMin(0);
+    serial << "t";
+    serial.Close();
+}
+
+void Data::programData(string data, QProgressBar &bar)
+{
+    SerialStream serial("/dev/ttyUSB0");
+    serial.SetBaudRate(SerialStreamBuf::BAUD_2400);
+    serial.SetNumOfStopBits(1);
+    serial.SetParity(SerialStreamBuf::PARITY_NONE);
+    serial.SetCharSize(SerialStreamBuf::CHAR_SIZE_8);
+    serial.SetFlowControl(SerialStreamBuf::FLOW_CONTROL_NONE);
+    serial.SetVTime(100);
+    serial.SetVMin(0);
+    char c=0;
+    bool readFailed=true;
+
+    for(int i=0;i<50;i++)
+    {
+        serial << "p";
+        serial.get(c);
+        if(c == 0 && readFailed==true)
+        {
+            usleep(5000);
         }
-
-	return true;
+        else if(c == '!')
+        {
+            readFailed=false;
+            i=50;
+        }
+    }
+    if(readFailed)
+    {
+        cout << "Failed writing to device" << endl;
+        serial.Close();
+        return;
+    }
+    for(int i=0;i<512;i++)
+    {
+        serial << data[i];
+        bar.setValue((i+1)*100/512);
+        QApplication::processEvents();
+        usleep(10000);
+    }
+    serial.Close();
 }

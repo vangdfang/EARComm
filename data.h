@@ -7,10 +7,11 @@
 #include <string>
 #include <vector>
 #include <QtGui/QProgressBar>
+#include <QApplication>
 
-#define MAX_LINE 100
-#define MAX_EVENTS 100
-#define MAX_FIPS 4000
+#define WX_EAR 0
+#define FM_EAR 1
+#define F2_EAR 2
 
 struct sEvent
 {
@@ -29,11 +30,12 @@ struct sFIPS
 class Data
 {
     public:
-        int main(int argc, char* argv[]);
         std::string readData(QProgressBar &bar);
-        void parseData(std::string cfg);
+        int detectEAR();
         bool loadFIPS();
         bool loadEvents();
+        void sendTest();
+        void programData(std::string cfg, QProgressBar &bar);
         std::vector<sFIPS> fips;
         std::vector<sEvent> events;
 };

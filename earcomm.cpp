@@ -8,8 +8,11 @@ EARComm::EARComm(QWidget *parent)
     int i=0;
     d.loadEvents();
     d.loadFIPS();
+    EARtype = WX_EAR;
 
     ui->setupUi(this);
+
+    updateFrequencyList();
 
     std::vector<sEvent>::iterator eventIter = d.events.begin();
     ui->eventCodes->setRowCount(d.events.size());
@@ -128,9 +131,65 @@ void EARComm::updateCountyList(QComboBox &countyBox, const QString &state)
     }
 }
 
+void EARComm::updateFrequencyList()
+{
+    double base;
+    double step;
+    int maxIndex;
+    char *tmp;
+    switch(EARtype)
+    {
+        case WX_EAR:
+                base=162.4;
+                step=0.025;
+                maxIndex=7;
+            break;
+        case FM_EAR:
+        case F2_EAR:
+                base=88.1;
+                step=0.2;
+                maxIndex=100;
+            break;
+    }
+    for(int i=1;i<=maxIndex;i++)
+    {
+        if(EARtype == WX_EAR)
+        {
+            sprintf(tmp, "%.3f", (base+(i-1)*step));
+        }
+        else
+        {
+            sprintf(tmp, "%.1f", (base+(i-1)*step));
+        }
+        ui->priFreq->addItem(tmp, QString((char)i));
+        ui->altFreq->addItem(tmp, QString((char)i));
+    }
+}
+
 void EARComm::on_readButton_clicked()
 {
+    int tmpEARtype;
+    tmpEARtype = d.detectEAR();
+    if(tmpEARtype == -1)
+    {
+        // error
+        std::cout << "Error reading EAR type -- EAR may not be connected" << std::endl;
+        return;
+    }
+    else
+    {
+        EARtype = tmpEARtype;
+    }
+
+    updateFrequencyList();
+
     std::string cfg = d.readData(*(ui->programStatus));
+    if(cfg.length() == 0)
+    {
+        // error
+        std::cout << "Error reading config data -- EAR may not be connected" << std::endl;
+        return;
+    }
     int idx;
 
     idx = ui->FIPS1St->findData(QString(cfg.substr(239,2).c_str()));
@@ -158,6 +217,14 @@ void EARComm::on_readButton_clicked()
     idx = ui->FIPS4->findData(QString(cfg.substr(259,3).c_str()));
     idx = ( idx == -1 ) ? 0 : idx;
     ui->FIPS4->setCurrentIndex(idx);
+
+    idx = ui->priFreq->findData(QString(cfg[236]));
+    idx = ( idx == -1 ) ? 0 : idx;
+    ui->priFreq->setCurrentIndex(idx);
+
+    idx = ui->altFreq->findData(QString(cfg[237]));
+    idx = ( idx == -1 ) ? 0 : idx;
+    ui->altFreq->setCurrentIndex(idx);
 
     ui->eventCodes->clearSelection();
 
@@ -195,6 +262,77 @@ void EARComm::on_readButton_clicked()
     {
         ui->backupSwitch->setCheckState(Qt::Unchecked);
     }
+}
+
+void EARComm::on_programButton_clicked()
+{
+    QString buf;
+    for(int i=0;i<236;i++)
+    {
+        buf.append("<");
+    }
+    buf.append(ui->priFreq->itemData(ui->priFreq->currentIndex()).toString());
+    buf.append(ui->altFreq->itemData(ui->altFreq->currentIndex()).toString());
+    // Portion, not used.
+    buf.append("0");
+    buf.append(ui->FIPS1St->itemData(ui->FIPS1St->currentIndex()).toString());
+    buf.append(ui->FIPS1->itemData(ui->FIPS1->currentIndex()).toString());
+    buf.append("0");
+    buf.append(ui->FIPS2St->itemData(ui->FIPS2St->currentIndex()).toString());
+    buf.append(ui->FIPS2->itemData(ui->FIPS2->currentIndex()).toString());
+    buf.append("0");
+    buf.append(ui->FIPS3St->itemData(ui->FIPS3St->currentIndex()).toString());
+    buf.append(ui->FIPS3->itemData(ui->FIPS3->currentIndex()).toString());
+    buf.append("0");
+    buf.append(ui->FIPS4St->itemData(ui->FIPS4St->currentIndex()).toString());
+    buf.append(ui->FIPS4->itemData(ui->FIPS4->currentIndex()).toString());
+    buf.append(ui->x10House->itemData(ui->x10House->currentIndex()).toInt());
+    buf.append(ui->x10Unit->itemData(ui->x10Unit->currentIndex()).toInt());
+    // Spare byte, not used.
+    buf.append("<");
+    // FM Synth Setup Bytes ??
+    buf.append("<<<<");
+    if(ui->eomSwitch->checkState() == Qt::Checked)
+    {
+        buf.append("1");
+    }
+    else
+    {
+        buf.append("0");
+    }
+    if(ui->backupSwitch->checkState() == Qt::Checked)
+    {
+        buf.append("1");
+    }
+    else
+    {
+        buf.append("0");
+    }
+
+    QList<QTableWidgetItem*> res = ui->eventCodes->selectedItems();
+    if(res.length() > 80)
+    {
+        // maximum 80 items can be selected...
+        std::cout << "Error: too many items selected.  Max 80" << std::endl;
+    }
+    for(int i=0; i<res.length(); i++)
+    {
+        if(res[i]->column() == 0)
+        {
+            buf.append(res[i]->text());
+        }
+    }
+    while(buf.length() < 512)
+    {
+        buf.append(">");
+    }
+    std::cout << buf.toStdString() << std::endl;
+    d.programData(buf.toStdString(), *(ui->programStatus));
+}
+
+void EARComm::on_testButton_clicked()
+{
+    d.sendTest();
 }
 
 EARComm::~EARComm()
