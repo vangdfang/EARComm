@@ -133,10 +133,10 @@ void EARComm::updateCountyList(QComboBox &countyBox, const QString &state)
 
 void EARComm::updateFrequencyList()
 {
-    double base;
-    double step;
-    int maxIndex;
-    char *tmp;
+    double base=162.4;
+    double step=0.025;
+    int maxIndex=7;
+    char tmp[10];
     switch(EARtype)
     {
         case WX_EAR:
@@ -155,11 +155,11 @@ void EARComm::updateFrequencyList()
     {
         if(EARtype == WX_EAR)
         {
-            sprintf(tmp, "%.3f", (base+(i-1)*step));
+            snprintf(tmp, 10, "%.3f", (base+(i-1)*step));
         }
         else
         {
-            sprintf(tmp, "%.1f", (base+(i-1)*step));
+            snprintf(tmp, 10, "%.1f", (base+(i-1)*step));
         }
         ui->priFreq->addItem(tmp, QString((char)i));
         ui->altFreq->addItem(tmp, QString((char)i));
