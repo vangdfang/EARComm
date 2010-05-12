@@ -1,0 +1,23 @@
+EARComm - Emergency Alert Radio Tool
+
+This is a project long in the works--but finally at a point where I am
+happy to release it.  It's still a bit unstable, and the only tested
+hardware is the WX-EAR.  I do not have an FM EAR or FM EAR (rev 2), so
+stubs for their functionality are included, but not finished.  If you
+have one of these models and would like to help, please feel free to
+contact me.
+
+Note: currently, this application depends on LibSerial.  This means it
+should be portable to any POSIX operating system, but it will NOT be
+portable to Windows.  This may change in the future, but LibSerial does
+make some of the serial access pleasant.  Serial device names are also
+hard-coded for now, though this will change very soon.
+
+Using the application should be simple: qmake, make, ./EARComm.  Currently
+I do not have an install feature, and it expects the data files for FIPS
+and event codes to be present in the current directory.  Consider this a
+known bug.
+
+If you have any requests, please don't hesitate to contact me.
+
+Doug Kelly, May 2010
