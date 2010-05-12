@@ -28,10 +28,50 @@ EARComm::EARComm(QWidget *parent)
 
     std::vector<sFIPS>::iterator fipsIter = d.fips.begin();
     std::string tmpState;
-    ui->FIPS1St->addItem("XX", "XX");
-    ui->FIPS2St->addItem("XX", "XX");
-    ui->FIPS3St->addItem("XX", "XX");
-    ui->FIPS4St->addItem("XX", "XX");
+    ui->FIPS1Reg->addItem("ALL", "0");
+    ui->FIPS2Reg->addItem("ALL", "0");
+    ui->FIPS3Reg->addItem("ALL", "0");
+    ui->FIPS4Reg->addItem("ALL", "0");
+    ui->FIPS1Reg->addItem("NW", "1");
+    ui->FIPS2Reg->addItem("NW", "1");
+    ui->FIPS3Reg->addItem("NW", "1");
+    ui->FIPS4Reg->addItem("NW", "1");
+    ui->FIPS1Reg->addItem("N", "2");
+    ui->FIPS2Reg->addItem("N", "2");
+    ui->FIPS3Reg->addItem("N", "2");
+    ui->FIPS4Reg->addItem("N", "2");
+    ui->FIPS1Reg->addItem("NE", "3");
+    ui->FIPS2Reg->addItem("NE", "3");
+    ui->FIPS3Reg->addItem("NE", "3");
+    ui->FIPS4Reg->addItem("NE", "3");
+    ui->FIPS1Reg->addItem("W", "4");
+    ui->FIPS2Reg->addItem("W", "4");
+    ui->FIPS3Reg->addItem("W", "4");
+    ui->FIPS4Reg->addItem("W", "4");
+    ui->FIPS1Reg->addItem("C", "5");
+    ui->FIPS2Reg->addItem("C", "5");
+    ui->FIPS3Reg->addItem("C", "5");
+    ui->FIPS4Reg->addItem("C", "5");
+    ui->FIPS1Reg->addItem("E", "6");
+    ui->FIPS2Reg->addItem("E", "6");
+    ui->FIPS3Reg->addItem("E", "6");
+    ui->FIPS4Reg->addItem("E", "6");
+    ui->FIPS1Reg->addItem("SW", "7");
+    ui->FIPS2Reg->addItem("SW", "7");
+    ui->FIPS3Reg->addItem("SW", "7");
+    ui->FIPS4Reg->addItem("SW", "7");
+    ui->FIPS1Reg->addItem("S", "8");
+    ui->FIPS2Reg->addItem("S", "8");
+    ui->FIPS3Reg->addItem("S", "8");
+    ui->FIPS4Reg->addItem("S", "8");
+    ui->FIPS1Reg->addItem("SE", "9");
+    ui->FIPS2Reg->addItem("SE", "9");
+    ui->FIPS3Reg->addItem("SE", "9");
+    ui->FIPS4Reg->addItem("SE", "9");
+    ui->FIPS1St->addItem("XX", "\x01\x01");
+    ui->FIPS2St->addItem("XX", "\x01\x01");
+    ui->FIPS3St->addItem("XX", "\x01\x01");
+    ui->FIPS4St->addItem("XX", "\x01\x01");
     ui->FIPS1St->addItem("ALL", "000");
     ui->FIPS2St->addItem("ALL", "000");
     ui->FIPS3St->addItem("ALL", "000");
@@ -88,21 +128,25 @@ EARComm::EARComm(QWidget *parent)
 void EARComm::on_FIPS1St_currentIndexChanged(const QString &text)
 {
     updateCountyList(*(ui->FIPS1), text);
+    updateRegionList(*(ui->FIPS1Reg), text);
 }
 
 void EARComm::on_FIPS2St_currentIndexChanged(const QString &text)
 {
     updateCountyList(*(ui->FIPS2), text);
+    updateRegionList(*(ui->FIPS2Reg), text);
 }
 
 void EARComm::on_FIPS3St_currentIndexChanged(const QString &text)
 {
     updateCountyList(*(ui->FIPS3), text);
+    updateRegionList(*(ui->FIPS3Reg), text);
 }
 
 void EARComm::on_FIPS4St_currentIndexChanged(const QString &text)
 {
     updateCountyList(*(ui->FIPS4), text);
+    updateRegionList(*(ui->FIPS4Reg), text);
 }
 
 void EARComm::updateCountyList(QComboBox &countyBox, const QString &state)
@@ -111,7 +155,7 @@ void EARComm::updateCountyList(QComboBox &countyBox, const QString &state)
     countyBox.clear();
     if(state == "XX")
     {
-        countyBox.addItem("No Location Set", "XXX");
+        countyBox.addItem("No Location Set", "\x01\x01\x01");
     }
     else if(state == "ALL")
     {
@@ -128,6 +172,19 @@ void EARComm::updateCountyList(QComboBox &countyBox, const QString &state)
             countyBox.addItem((*fipsIter).county.c_str(), (*fipsIter).countyCode.c_str());
         }
         ++fipsIter;
+    }
+}
+
+void EARComm::updateRegionList(QComboBox &regionBox, const QString &state)
+{
+    if(state == "XX") {
+        regionBox.setEnabled(false);
+        regionBox.addItem("X", "\x01");
+        regionBox.setCurrentIndex(regionBox.findText("X"));
+    }
+    else {
+        regionBox.removeItem(regionBox.findText("X"));
+        regionBox.setEnabled(true);
     }
 }
 
@@ -192,18 +249,35 @@ void EARComm::on_readButton_clicked()
     }
     int idx;
 
+    idx = ui->FIPS1Reg->findData(QString(cfg.substr(238,1).c_str()));
+    idx = ( idx == -1 ) ? 0 : idx;
+    ui->FIPS1Reg->setCurrentIndex(idx);
+    idx = ui->FIPS2Reg->findData(QString(cfg.substr(244,1).c_str()));
+    idx = ( idx == -1 ) ? 0 : idx;
+    ui->FIPS2Reg->setCurrentIndex(idx);
+    idx = ui->FIPS3Reg->findData(QString(cfg.substr(250,1).c_str()));
+    idx = ( idx == -1 ) ? 0 : idx;
+    ui->FIPS3Reg->setCurrentIndex(idx);
+    idx = ui->FIPS4Reg->findData(QString(cfg.substr(256,1).c_str()));
+    idx = ( idx == -1 ) ? 0 : idx;
+    ui->FIPS4Reg->setCurrentIndex(idx);
+
     idx = ui->FIPS1St->findData(QString(cfg.substr(239,2).c_str()));
     idx = ( idx == -1 ) ? 0 : idx;
     ui->FIPS1St->setCurrentIndex(idx);
+    updateRegionList(*(ui->FIPS1Reg), ui->FIPS1St->currentText());
     idx = ui->FIPS2St->findData(QString(cfg.substr(245,2).c_str()));
     idx = ( idx == -1 ) ? 0 : idx;
     ui->FIPS2St->setCurrentIndex(idx);
+    updateRegionList(*(ui->FIPS2Reg), ui->FIPS2St->currentText());
     idx = ui->FIPS3St->findData(QString(cfg.substr(251,2).c_str()));
     idx = ( idx == -1 ) ? 0 : idx;
+    updateRegionList(*(ui->FIPS3Reg), ui->FIPS3St->currentText());
     ui->FIPS3St->setCurrentIndex(idx);
     idx = ui->FIPS4St->findData(QString(cfg.substr(257,2).c_str()));
     idx = ( idx == -1 ) ? 0 : idx;
     ui->FIPS4St->setCurrentIndex(idx);
+    updateRegionList(*(ui->FIPS4Reg), ui->FIPS4St->currentText());
 
     idx = ui->FIPS1->findData(QString(cfg.substr(241,3).c_str()));
     idx = ( idx == -1 ) ? 0 : idx;
@@ -269,21 +343,20 @@ void EARComm::on_programButton_clicked()
     QString buf;
     for(int i=0;i<236;i++)
     {
-        buf.append("<");
+        buf.append(0x01);
     }
     buf.append(ui->priFreq->itemData(ui->priFreq->currentIndex()).toString());
     buf.append(ui->altFreq->itemData(ui->altFreq->currentIndex()).toString());
-    // Portion, not used.
-    buf.append("0");
+    buf.append(ui->FIPS1Reg->itemData(ui->FIPS1Reg->currentIndex()).toString());
     buf.append(ui->FIPS1St->itemData(ui->FIPS1St->currentIndex()).toString());
     buf.append(ui->FIPS1->itemData(ui->FIPS1->currentIndex()).toString());
-    buf.append("0");
+    buf.append(ui->FIPS2Reg->itemData(ui->FIPS2Reg->currentIndex()).toString());
     buf.append(ui->FIPS2St->itemData(ui->FIPS2St->currentIndex()).toString());
     buf.append(ui->FIPS2->itemData(ui->FIPS2->currentIndex()).toString());
-    buf.append("0");
+    buf.append(ui->FIPS3Reg->itemData(ui->FIPS3Reg->currentIndex()).toString());
     buf.append(ui->FIPS3St->itemData(ui->FIPS3St->currentIndex()).toString());
     buf.append(ui->FIPS3->itemData(ui->FIPS3->currentIndex()).toString());
-    buf.append("0");
+    buf.append(ui->FIPS4Reg->itemData(ui->FIPS4Reg->currentIndex()).toString());
     buf.append(ui->FIPS4St->itemData(ui->FIPS4St->currentIndex()).toString());
     buf.append(ui->FIPS4->itemData(ui->FIPS4->currentIndex()).toString());
     buf.append(ui->x10House->itemData(ui->x10House->currentIndex()).toInt());
@@ -291,7 +364,7 @@ void EARComm::on_programButton_clicked()
     // Spare byte, not used.
     buf.append("<");
     // FM Synth Setup Bytes ??
-    buf.append("<<<<");
+    buf.append("\x01\x01\x01\x01\x01");
     if(ui->eomSwitch->checkState() == Qt::Checked)
     {
         buf.append("1");
@@ -324,7 +397,7 @@ void EARComm::on_programButton_clicked()
     }
     while(buf.length() < 512)
     {
-        buf.append(">");
+        buf.append(0x01);
     }
     std::cout << buf.toStdString() << std::endl;
     d.programData(buf.toStdString(), *(ui->programStatus));

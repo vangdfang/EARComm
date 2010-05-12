@@ -58,18 +58,18 @@ string Data::readData(QProgressBar &bar)
 {
     string buf;
 
-    SerialStream serial("/dev/ttyUSB0");
+    SerialStream serial(string("/dev/ttyUSB0"), std::ios::in|std::ios::out);
     serial.SetBaudRate(SerialStreamBuf::BAUD_2400);
     serial.SetNumOfStopBits(1);
     serial.SetParity(SerialStreamBuf::PARITY_NONE);
     serial.SetCharSize(SerialStreamBuf::CHAR_SIZE_8);
     serial.SetFlowControl(SerialStreamBuf::FLOW_CONTROL_NONE);
-    serial.SetVTime(100);
+    serial.SetVTime(50);
     serial.SetVMin(0);
     char c=0;
     bool readFailed=true;
 
-    for(int i=0;i<50;i++)
+    for(int i=0;i<10;i++)
     {
         serial << "d";
 
@@ -79,7 +79,7 @@ string Data::readData(QProgressBar &bar)
             if(c == 0 && readFailed == true)
             {
                 j=512;
-                usleep(5000);                
+                usleep(50);
             }
             else
             {
@@ -91,7 +91,7 @@ string Data::readData(QProgressBar &bar)
         }
         if(!readFailed)
         {
-            i=50;
+            i=10;
         }
     }
     cout << buf << endl;
@@ -104,18 +104,18 @@ int Data::detectEAR()
 {
     string buf;
 
-    SerialStream serial("/dev/ttyUSB0");
+    SerialStream serial(string("/dev/ttyUSB0"), std::ios::in|std::ios::out);
     serial.SetBaudRate(SerialStreamBuf::BAUD_2400);
     serial.SetNumOfStopBits(1);
     serial.SetParity(SerialStreamBuf::PARITY_NONE);
     serial.SetCharSize(SerialStreamBuf::CHAR_SIZE_8);
     serial.SetFlowControl(SerialStreamBuf::FLOW_CONTROL_NONE);
-    serial.SetVTime(100);
+    serial.SetVTime(50);
     serial.SetVMin(0);
     char c=0;
     bool readFailed=true;
 
-    for(int i=0;i<50;i++)
+    for(int i=0;i<10;i++)
     {
         serial << "?";
 
@@ -125,7 +125,7 @@ int Data::detectEAR()
             if(c == 0 && readFailed==true)
             {
                 j=2;
-                usleep(5000);
+                usleep(50);
             }
             else
             {
@@ -135,7 +135,7 @@ int Data::detectEAR()
         }
         if(!readFailed)
         {
-            i=50;
+            i=10;
         }
     }
     cout << buf << endl;
@@ -260,13 +260,13 @@ bool Data::loadEvents()
 
 void Data::sendTest()
 {
-    SerialStream serial("/dev/ttyUSB0");
+    SerialStream serial(string("/dev/ttyUSB0"), std::ios::in|std::ios::out);
     serial.SetBaudRate(SerialStreamBuf::BAUD_2400);
     serial.SetNumOfStopBits(1);
     serial.SetParity(SerialStreamBuf::PARITY_NONE);
     serial.SetCharSize(SerialStreamBuf::CHAR_SIZE_8);
     serial.SetFlowControl(SerialStreamBuf::FLOW_CONTROL_NONE);
-    serial.SetVTime(100);
+    serial.SetVTime(50);
     serial.SetVMin(0);
     serial << "t";
     serial.Close();
@@ -274,29 +274,29 @@ void Data::sendTest()
 
 void Data::programData(string data, QProgressBar &bar)
 {
-    SerialStream serial("/dev/ttyUSB0");
+    SerialStream serial(string("/dev/ttyUSB0"), std::ios::in|std::ios::out);
     serial.SetBaudRate(SerialStreamBuf::BAUD_2400);
     serial.SetNumOfStopBits(1);
     serial.SetParity(SerialStreamBuf::PARITY_NONE);
     serial.SetCharSize(SerialStreamBuf::CHAR_SIZE_8);
     serial.SetFlowControl(SerialStreamBuf::FLOW_CONTROL_NONE);
-    serial.SetVTime(100);
+    serial.SetVTime(50);
     serial.SetVMin(0);
     char c=0;
     bool readFailed=true;
 
-    for(int i=0;i<50;i++)
+    for(int i=0;i<10;i++)
     {
         serial << "p";
         serial.get(c);
         if(c == 0 && readFailed==true)
         {
-            usleep(5000);
+            usleep(50);
         }
         else if(c == '!')
         {
             readFailed=false;
-            i=50;
+            i=10;
         }
     }
     if(readFailed)
@@ -311,6 +311,24 @@ void Data::programData(string data, QProgressBar &bar)
         bar.setValue((i+1)*100/512);
         QApplication::processEvents();
         usleep(10000);
+    }
+
+    readFailed=true;
+    for(int i=0;i<10;i++)
+    {
+        serial.get(c);
+        if(c == 0 && readFailed==true)
+        {
+            usleep(50);
+        }
+        else if(c == '*')
+        {
+            readFailed=false;
+            i=10;
+        }
+    }
+    if(readFailed) {
+        cout << "Failed finishing programming: " << c << endl;
     }
     serial.Close();
 }

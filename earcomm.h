@@ -24,6 +24,7 @@ private:
     int EARtype;
     void updateFrequencyList();
     void updateCountyList(QComboBox &countyBox, const QString &state);
+    void updateRegionList(QComboBox &regionBox, const QString &state);
 
 private slots:
     void on_FIPS1St_currentIndexChanged(const QString &text);
