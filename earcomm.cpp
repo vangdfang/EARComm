@@ -205,6 +205,7 @@ void EARComm::updateRegionList(QComboBox &regionBox, const QString &state)
     else {
         regionBox.removeItem(regionBox.findText("X"));
         regionBox.setEnabled(true);
+        regionBox.setCurrentIndex(regionBox.findText("ALL"));
     }
 }
 
@@ -382,7 +383,7 @@ void EARComm::on_programButton_clicked()
     buf.append(ui->x10House->itemData(ui->x10House->currentIndex()).toInt());
     buf.append(ui->x10Unit->itemData(ui->x10Unit->currentIndex()).toInt());
     // Spare byte, not used.
-    buf.append("<");
+    buf.append("\x01");
     // FM Synth Setup Bytes ??
     buf.append("\x01\x01\x01\x01\x01");
     if(ui->eomSwitch->checkState() == Qt::Checked)
@@ -407,6 +408,7 @@ void EARComm::on_programButton_clicked()
     {
         // maximum 80 items can be selected...
         std::cout << "Error: too many items selected.  Max 80" << std::endl;
+				return;
     }
     for(int i=0; i<res.length(); i++)
     {
