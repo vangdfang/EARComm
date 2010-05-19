@@ -23,6 +23,7 @@
 
 #include <QtGui/QMainWindow>
 #include <QtGui/QComboBox>
+#include <QMessageBox>
 #include "data.h"
 
 namespace Ui

@@ -50,12 +50,12 @@ struct sFIPS
 class Data
 {
     public:
-        std::string readData(QProgressBar &bar);
-        int detectEAR();
+        std::string readData(std::string device, QProgressBar &bar);
+        int detectEAR(std::string device);
         bool loadFIPS();
         bool loadEvents();
-        void sendTest();
-        void programData(std::string cfg, QProgressBar &bar);
+        void sendTest(std::string device);
+        void programData(std::string device, std::string cfg, QProgressBar &bar);
         std::vector<sFIPS> fips;
         std::vector<sEvent> events;
 };

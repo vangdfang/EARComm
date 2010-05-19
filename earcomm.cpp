@@ -247,11 +247,13 @@ void EARComm::updateFrequencyList()
 void EARComm::on_readButton_clicked()
 {
     int tmpEARtype;
-    tmpEARtype = d.detectEAR();
+    tmpEARtype = d.detectEAR(ui->device->text().toStdString());
     if(tmpEARtype == -1)
     {
         // error
+        QMessageBox err(QMessageBox::Warning, "Error", "Could not detect EAR type.  Check that EAR is connected, the device is correct, and try again.", QMessageBox::Ok );
         std::cout << "Error reading EAR type -- EAR may not be connected" << std::endl;
+        err.exec();
         return;
     }
     else
@@ -261,11 +263,13 @@ void EARComm::on_readButton_clicked()
 
     updateFrequencyList();
 
-    std::string cfg = d.readData(*(ui->programStatus));
+    std::string cfg = d.readData(ui->device->text().toStdString(), *(ui->programStatus));
     if(cfg.length() == 0)
     {
         // error
+        QMessageBox err(QMessageBox::Warning, "Error", "Could not read EAR data.  Check that EAR is connected, the device is correct, and try again.", QMessageBox::Ok );
         std::cout << "Error reading config data -- EAR may not be connected" << std::endl;
+        err.exec();
         return;
     }
     int idx;
@@ -407,8 +411,10 @@ void EARComm::on_programButton_clicked()
     if(res.length() > 80)
     {
         // maximum 80 items can be selected...
+        QMessageBox err(QMessageBox::Critical, "Error", "Too many items selected.  A maximum of 80 events may be selected.", QMessageBox::Ok );
         std::cout << "Error: too many items selected.  Max 80" << std::endl;
-				return;
+        err.exec();
+        return;
     }
     for(int i=0; i<res.length(); i++)
     {
@@ -422,12 +428,12 @@ void EARComm::on_programButton_clicked()
         buf.append(0x01);
     }
     std::cout << buf.toStdString() << std::endl;
-    d.programData(buf.toStdString(), *(ui->programStatus));
+    d.programData(ui->device->text().toStdString(), buf.toStdString(), *(ui->programStatus));
 }
 
 void EARComm::on_testButton_clicked()
 {
-    d.sendTest();
+    d.sendTest(ui->device->text().toStdString());
 }
 
 EARComm::~EARComm()

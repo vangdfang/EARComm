@@ -24,17 +24,17 @@ using namespace std;
 using LibSerial::SerialStream;
 using LibSerial::SerialStreamBuf;
 
-string Data::readData(QProgressBar &bar)
+string Data::readData(std::string device, QProgressBar &bar)
 {
     string buf;
 
-    SerialStream serial(string("/dev/ttyUSB0"), std::ios::in|std::ios::out);
+    SerialStream serial(device, std::ios::in|std::ios::out);
     serial.SetBaudRate(SerialStreamBuf::BAUD_2400);
     serial.SetNumOfStopBits(1);
     serial.SetParity(SerialStreamBuf::PARITY_NONE);
     serial.SetCharSize(SerialStreamBuf::CHAR_SIZE_8);
     serial.SetFlowControl(SerialStreamBuf::FLOW_CONTROL_NONE);
-    serial.SetVTime(50);
+    serial.SetVTime(10);
     serial.SetVMin(0);
     char c=0;
     bool readFailed=true;
@@ -70,11 +70,11 @@ string Data::readData(QProgressBar &bar)
     return buf;
 }
 
-int Data::detectEAR()
+int Data::detectEAR(std::string device)
 {
     string buf;
 
-    SerialStream serial(string("/dev/ttyUSB0"), std::ios::in|std::ios::out);
+    SerialStream serial(device, std::ios::in|std::ios::out);
     serial.SetBaudRate(SerialStreamBuf::BAUD_2400);
     serial.SetNumOfStopBits(1);
     serial.SetParity(SerialStreamBuf::PARITY_NONE);
@@ -182,9 +182,9 @@ bool Data::loadEvents()
     return true;
 }
 
-void Data::sendTest()
+void Data::sendTest(std::string device)
 {
-    SerialStream serial(string("/dev/ttyUSB0"), std::ios::in|std::ios::out);
+    SerialStream serial(device, std::ios::in|std::ios::out);
     serial.SetBaudRate(SerialStreamBuf::BAUD_2400);
     serial.SetNumOfStopBits(1);
     serial.SetParity(SerialStreamBuf::PARITY_NONE);
@@ -196,9 +196,9 @@ void Data::sendTest()
     serial.Close();
 }
 
-void Data::programData(string data, QProgressBar &bar)
+void Data::programData(std::string device, std::string data, QProgressBar &bar)
 {
-    SerialStream serial(string("/dev/ttyUSB0"), std::ios::in|std::ios::out);
+    SerialStream serial(device, std::ios::in|std::ios::out);
     serial.SetBaudRate(SerialStreamBuf::BAUD_2400);
     serial.SetNumOfStopBits(1);
     serial.SetParity(SerialStreamBuf::PARITY_NONE);
