@@ -64,8 +64,8 @@ EARComm::EARComm(QWidget *parent)
         ++fipsIter;
     }
 
-    ui->x10House->addItem("OFF", 0x01);
-    ui->x10Unit->addItem("OFF", 0x01);
+    ui->x10House->addItem("OFF", "\x01");
+    ui->x10Unit->addItem("OFF", "\x01");
     ui->x10House->addItem("A", 0x47);
     ui->x10Unit->addItem("1", 0x47);
     ui->x10House->addItem("B", 0x48);
@@ -345,7 +345,7 @@ void EARComm::on_programButton_clicked()
     QString buf;
     for(int i=0;i<236;i++)
     {
-        buf.append("<");
+        buf.append("\x01");
     }
     buf.append(ui->priFreq->itemData(ui->priFreq->currentIndex()).toString());
     buf.append(ui->altFreq->itemData(ui->altFreq->currentIndex()).toString());
@@ -408,14 +408,14 @@ void EARComm::on_programButton_clicked()
     }
     while(buf.length() < 512)
     {
-        buf.append(0x01);
+        buf.append("\x01");
     }
     std::cout << buf.toStdString() << std::endl;
     d.programData(ui->device->text().toStdString(), buf.toStdString(), *(ui->programStatus));
 }
 
 // This function handles determining the Synth Setup bytes
-// It is a port of Skip Whyte's original VB function, with
+// It is a port of Skip White's original VB function, with
 // some minor alterations to make things a little more accurate.
 std::string EARComm::getSynthSetup(int channel)
 {
