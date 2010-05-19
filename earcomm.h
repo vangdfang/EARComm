@@ -44,8 +44,11 @@ private:
     Data d;
     int EARtype;
     void updateFrequencyList();
+    void populateRegionList(QComboBox &regionBox);
+    void populateStateList(std::string state, std::string code);
     void updateCountyList(QComboBox &countyBox, const QString &state);
     void updateRegionList(QComboBox &regionBox, const QString &state);
+    std::string getSynthSetup(int channel);
 
 private slots:
     void on_FIPS1St_currentIndexChanged(const QString &text);

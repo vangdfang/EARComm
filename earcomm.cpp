@@ -48,62 +48,17 @@ EARComm::EARComm(QWidget *parent)
 
     std::vector<sFIPS>::iterator fipsIter = d.fips.begin();
     std::string tmpState;
-    ui->FIPS1Reg->addItem("ALL", "0");
-    ui->FIPS2Reg->addItem("ALL", "0");
-    ui->FIPS3Reg->addItem("ALL", "0");
-    ui->FIPS4Reg->addItem("ALL", "0");
-    ui->FIPS1Reg->addItem("NW", "1");
-    ui->FIPS2Reg->addItem("NW", "1");
-    ui->FIPS3Reg->addItem("NW", "1");
-    ui->FIPS4Reg->addItem("NW", "1");
-    ui->FIPS1Reg->addItem("N", "2");
-    ui->FIPS2Reg->addItem("N", "2");
-    ui->FIPS3Reg->addItem("N", "2");
-    ui->FIPS4Reg->addItem("N", "2");
-    ui->FIPS1Reg->addItem("NE", "3");
-    ui->FIPS2Reg->addItem("NE", "3");
-    ui->FIPS3Reg->addItem("NE", "3");
-    ui->FIPS4Reg->addItem("NE", "3");
-    ui->FIPS1Reg->addItem("W", "4");
-    ui->FIPS2Reg->addItem("W", "4");
-    ui->FIPS3Reg->addItem("W", "4");
-    ui->FIPS4Reg->addItem("W", "4");
-    ui->FIPS1Reg->addItem("C", "5");
-    ui->FIPS2Reg->addItem("C", "5");
-    ui->FIPS3Reg->addItem("C", "5");
-    ui->FIPS4Reg->addItem("C", "5");
-    ui->FIPS1Reg->addItem("E", "6");
-    ui->FIPS2Reg->addItem("E", "6");
-    ui->FIPS3Reg->addItem("E", "6");
-    ui->FIPS4Reg->addItem("E", "6");
-    ui->FIPS1Reg->addItem("SW", "7");
-    ui->FIPS2Reg->addItem("SW", "7");
-    ui->FIPS3Reg->addItem("SW", "7");
-    ui->FIPS4Reg->addItem("SW", "7");
-    ui->FIPS1Reg->addItem("S", "8");
-    ui->FIPS2Reg->addItem("S", "8");
-    ui->FIPS3Reg->addItem("S", "8");
-    ui->FIPS4Reg->addItem("S", "8");
-    ui->FIPS1Reg->addItem("SE", "9");
-    ui->FIPS2Reg->addItem("SE", "9");
-    ui->FIPS3Reg->addItem("SE", "9");
-    ui->FIPS4Reg->addItem("SE", "9");
-    ui->FIPS1St->addItem("XX", "\x01\x01");
-    ui->FIPS2St->addItem("XX", "\x01\x01");
-    ui->FIPS3St->addItem("XX", "\x01\x01");
-    ui->FIPS4St->addItem("XX", "\x01\x01");
-    ui->FIPS1St->addItem("ALL", "000");
-    ui->FIPS2St->addItem("ALL", "000");
-    ui->FIPS3St->addItem("ALL", "000");
-    ui->FIPS4St->addItem("ALL", "000");
+    populateRegionList(*(ui->FIPS1Reg));
+    populateRegionList(*(ui->FIPS2Reg));
+    populateRegionList(*(ui->FIPS3Reg));
+    populateRegionList(*(ui->FIPS4Reg));
+    populateStateList("XX", "\x01\x01");
+    populateStateList("ALL", "000");
     while(fipsIter != d.fips.end())
     {
         if((*fipsIter).state != tmpState)
         {
-            ui->FIPS1St->addItem((*fipsIter).state.c_str(), (*fipsIter).stateCode.c_str());
-            ui->FIPS2St->addItem((*fipsIter).state.c_str(), (*fipsIter).stateCode.c_str());
-            ui->FIPS3St->addItem((*fipsIter).state.c_str(), (*fipsIter).stateCode.c_str());
-            ui->FIPS4St->addItem((*fipsIter).state.c_str(), (*fipsIter).stateCode.c_str());
+            populateStateList((*fipsIter).state.c_str(), (*fipsIter).stateCode.c_str());
             tmpState = (*fipsIter).state;
         }
         ++fipsIter;
@@ -143,6 +98,28 @@ EARComm::EARComm(QWidget *parent)
     ui->x10Unit->addItem("15", 0x43);
     ui->x10House->addItem("P", 0x44);
     ui->x10Unit->addItem("16", 0x44);
+}
+
+void EARComm::populateRegionList(QComboBox &regionBox)
+{
+    regionBox.addItem("ALL", "0");
+    regionBox.addItem("NW", "1");
+    regionBox.addItem("N", "2");
+    regionBox.addItem("NE", "3");
+    regionBox.addItem("W", "4");
+    regionBox.addItem("C", "5");
+    regionBox.addItem("E", "6");
+    regionBox.addItem("SW", "7");
+    regionBox.addItem("S", "8");
+    regionBox.addItem("SE", "9");
+}
+
+void EARComm::populateStateList(std::string state, std::string code)
+{
+    ui->FIPS1St->addItem(QString(state.c_str()), QString(code.c_str()));
+    ui->FIPS2St->addItem(QString(state.c_str()), QString(code.c_str()));
+    ui->FIPS3St->addItem(QString(state.c_str()), QString(code.c_str()));
+    ui->FIPS4St->addItem(QString(state.c_str()), QString(code.c_str()));
 }
 
 void EARComm::on_FIPS1St_currentIndexChanged(const QString &text)
@@ -368,7 +345,7 @@ void EARComm::on_programButton_clicked()
     QString buf;
     for(int i=0;i<236;i++)
     {
-        buf.append(0x01);
+        buf.append("<");
     }
     buf.append(ui->priFreq->itemData(ui->priFreq->currentIndex()).toString());
     buf.append(ui->altFreq->itemData(ui->altFreq->currentIndex()).toString());
@@ -388,8 +365,14 @@ void EARComm::on_programButton_clicked()
     buf.append(ui->x10Unit->itemData(ui->x10Unit->currentIndex()).toInt());
     // Spare byte, not used.
     buf.append("\x01");
-    // FM Synth Setup Bytes ??
-    buf.append("\x01\x01\x01\x01\x01");
+    // FM Synth Setup Bytes
+    if(EARtype == WX_EAR) {
+        buf.append("\x01\x01\x01\x01");
+    }
+    else {
+        buf.append(QString(getSynthSetup(ui->priFreq->itemData(ui->priFreq->currentIndex()).toInt()).c_str()));
+        buf.append(QString(getSynthSetup(ui->priFreq->itemData(ui->altFreq->currentIndex()).toInt()).c_str()));
+    }
     if(ui->eomSwitch->checkState() == Qt::Checked)
     {
         buf.append("1");
@@ -429,6 +412,58 @@ void EARComm::on_programButton_clicked()
     }
     std::cout << buf.toStdString() << std::endl;
     d.programData(ui->device->text().toStdString(), buf.toStdString(), *(ui->programStatus));
+}
+
+// This function handles determining the Synth Setup bytes
+// It is a port of Skip Whyte's original VB function, with
+// some minor alterations to make things a little more accurate.
+std::string EARComm::getSynthSetup(int channel)
+{
+    char fmd[3];
+    int i;
+    int j=2;
+    long intermediate;
+    std::string ret;
+
+    // frequency in kHz
+    int freq = 87900 + (channel * 200);
+    if(EARtype == FM_EAR) {
+        fmd[2] = 35;
+        intermediate = (2 * freq) + 21400;
+    }
+    else if(EARtype == F2_EAR) {
+        fmd[2] = 160;
+        // add IF
+        freq += 10700;
+        // divide by reference frequency
+        freq /= 25;
+        // left shift one bit, store in intermediate
+        intermediate = freq * 2; 
+    }
+    else {
+        // not a FM EAR--these are unused
+        return std::string("\x01\x01");
+    }
+
+    fmd[0] = 1;
+    fmd[1] = 0;
+
+    // This is the magic--end result is the two bytes used by the EAR
+    for(i=17; i>=0; i--) {
+        if(intermediate & (2 ^ i)) {
+            fmd[j] = fmd[j] + (2^(i%8));
+        }
+        if(i == 16) {
+            j=1;
+        }
+        else if(i == 8) {
+            j=0;
+        }
+    }
+
+    ret.append(1, fmd[0]);
+    ret.append(1, fmd[1]);
+    return ret;
 }
 
 void EARComm::on_testButton_clicked()
