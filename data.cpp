@@ -18,8 +18,10 @@
  *  along with EARComm.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <libserialport.h>
 #include "data.h"
 #include <stdexcept>
+#include <unistd.h>
 
 using namespace std;
 
@@ -345,7 +347,7 @@ void Data::programData(std::string device, std::string data, QProgressBar &bar)
     }
 }
 
-sp_return Data::openPort(std::string device)
+int Data::openPort(std::string device)
 {
     sp_return res = SP_OK;
     if (!port)
@@ -356,7 +358,7 @@ sp_return Data::openPort(std::string device)
             cout << "Failed to find port " << device << endl;
             return res;
         }
-        res = sp_open(port, SP_MODE_READ_WRITE);
+        res = sp_open(port, (sp_mode)(SP_MODE_READ | SP_MODE_WRITE));
         if (SP_OK != res)
         {
             cout << "Failed to open port " << device << endl;
@@ -410,7 +412,7 @@ sp_return Data::openPort(std::string device)
     return res;
 }
 
-sp_return Data::closePort()
+int Data::closePort()
 {
     sp_return res = SP_OK;
     if (port)

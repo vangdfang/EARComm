@@ -27,13 +27,15 @@
 #include <vector>
 #include <QProgressBar>
 #include <QApplication>
-#include <libserialport.h>
 
 enum {
     WX_EAR = 0,
     FM_EAR = 1,
     F2_EAR = 2
-} ear_types;
+};
+
+struct sp_port;
+struct sp_port_config;
 
 struct sEvent
 {
@@ -64,8 +66,8 @@ class Data
         std::vector<sFIPS> fips;
         std::vector<sEvent> events;
     private:
-        sp_return openPort(std::string device);
-        sp_return closePort();
+        int openPort(std::string device);
+        int closePort();
         sp_port_config* config;
         sp_port* port;
 };
