@@ -21,8 +21,8 @@
 #ifndef EARCOMM_H
 #define EARCOMM_H
 
-#include <QtGui/QMainWindow>
-#include <QtGui/QComboBox>
+#include <QMainWindow>
+#include <QComboBox>
 #include <QMessageBox>
 #include "data.h"
 

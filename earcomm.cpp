@@ -32,6 +32,12 @@ EARComm::EARComm(QWidget *parent)
 
     ui->setupUi(this);
 
+    std::vector<std::string> ports = d.listPorts();
+    for (std::vector<std::string>::iterator it = ports.begin(); it != ports.end(); it++)
+    {
+        ui->device->addItem(QString::fromStdString(*it));
+    }
+
     updateFrequencyList();
 
     std::vector<sEvent>::iterator eventIter = d.events.begin();
@@ -224,7 +230,7 @@ void EARComm::updateFrequencyList()
 void EARComm::on_readButton_clicked()
 {
     int tmpEARtype;
-    tmpEARtype = d.detectEAR(ui->device->text().toStdString());
+    tmpEARtype = d.detectEAR(ui->device->currentText().toStdString());
     if(tmpEARtype == -1)
     {
         // error
@@ -240,7 +246,7 @@ void EARComm::on_readButton_clicked()
 
     updateFrequencyList();
 
-    std::string cfg = d.readData(ui->device->text().toStdString(), *(ui->programStatus));
+    std::string cfg = d.readData(ui->device->currentText().toStdString(), *(ui->programStatus));
     if(cfg.length() == 0)
     {
         // error
@@ -411,7 +417,7 @@ void EARComm::on_programButton_clicked()
         buf.append("\x01");
     }
     std::cout << buf.toStdString() << std::endl;
-    d.programData(ui->device->text().toStdString(), buf.toStdString(), *(ui->programStatus));
+    d.programData(ui->device->currentText().toStdString(), buf.toStdString(), *(ui->programStatus));
 }
 
 // This function handles determining the Synth Setup bytes
@@ -468,7 +474,7 @@ std::string EARComm::getSynthSetup(int channel)
 
 void EARComm::on_testButton_clicked()
 {
-    d.sendTest(ui->device->text().toStdString());
+    d.sendTest(ui->device->currentText().toStdString());
 }
 
 EARComm::~EARComm()

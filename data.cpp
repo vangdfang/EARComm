@@ -19,37 +19,77 @@
  */
 
 #include "data.h"
+#include <stdexcept>
 
 using namespace std;
-using LibSerial::SerialStream;
-using LibSerial::SerialStreamBuf;
+
+static const int TIMEOUT = 50;
+
+Data::Data() : config(NULL), port(NULL)
+{
+}
+
+Data::~Data()
+{
+    closePort();
+}
+
+std::vector<std::string> Data::listPorts()
+{
+    struct sp_port** portList;
+    std::vector<std::string> result;
+    if (SP_OK != sp_list_ports(&portList))
+    {
+        cout << "Unable to enumerate ports" << endl;
+        return result;
+    }
+    int i = 0;
+    sp_port* currentPort = portList[i];
+    while (currentPort != NULL)
+    {
+        char* portName = sp_get_port_name(currentPort);
+        result.push_back(std::string(portName));
+        i++;
+        currentPort = portList[i];
+    }
+    sp_free_port_list(portList);
+    return result;
+}
 
 string Data::readData(std::string device, QProgressBar &bar)
 {
     string buf;
 
-    SerialStream serial(device, std::ios::in|std::ios::out);
-    serial.SetBaudRate(SerialStreamBuf::BAUD_2400);
-    serial.SetNumOfStopBits(1);
-    serial.SetParity(SerialStreamBuf::PARITY_NONE);
-    serial.SetCharSize(SerialStreamBuf::CHAR_SIZE_8);
-    serial.SetFlowControl(SerialStreamBuf::FLOW_CONTROL_NONE);
-    serial.SetVTime(10);
-    serial.SetVMin(0);
+    if (SP_OK != openPort(device)) {
+        cout << "Unable to open port " << device << endl;
+        return buf;
+    }
     char c=0;
     bool readFailed=true;
+    sp_return res;
 
-    for(int i=0;i<10;i++)
+    for (int i=0;i<10;i++)
     {
-        serial << "d";
+        if (SP_OK != sp_flush(port, SP_BUF_BOTH))
+        {
+            cout << "Warning: Could not flush buffers!" << endl;
+        }
+        if ((res = sp_blocking_write(port, "d", 1, TIMEOUT)) < SP_OK)
+        {
+            cout << "Unable to write to port: " << res << endl;
+            return buf;
+        }
 
         for(int j=0;j<512;j++)
         {
-            serial.get(c);
-            if(c == 0 && readFailed == true)
+            if ((res = sp_blocking_read(port, &c, 1, TIMEOUT)) < SP_OK)
+            {
+                cout << "Unable to read data from port: " << res << endl;
+            }
+            if (c == 0 && readFailed == true)
             {
                 j=512;
-                usleep(50);
+                usleep(500);
             }
             else
             {
@@ -59,13 +99,16 @@ string Data::readData(std::string device, QProgressBar &bar)
                 QApplication::processEvents();
             }
         }
-        if(!readFailed)
+        if (!readFailed)
         {
             i=10;
         }
     }
     cout << buf << endl;
-    serial.Close();
+    if (SP_OK != sp_flush(port, SP_BUF_BOTH))
+    {
+        cout << "Warning: Could not flush buffers!" << endl;
+    }
 
     return buf;
 }
@@ -74,24 +117,32 @@ int Data::detectEAR(std::string device)
 {
     string buf;
 
-    SerialStream serial(device, std::ios::in|std::ios::out);
-    serial.SetBaudRate(SerialStreamBuf::BAUD_2400);
-    serial.SetNumOfStopBits(1);
-    serial.SetParity(SerialStreamBuf::PARITY_NONE);
-    serial.SetCharSize(SerialStreamBuf::CHAR_SIZE_8);
-    serial.SetFlowControl(SerialStreamBuf::FLOW_CONTROL_NONE);
-    serial.SetVTime(50);
-    serial.SetVMin(0);
+    if (SP_OK != openPort(device)) {
+        cout << "Unable to open port " << device << endl;
+        return -1;
+    }
     char c=0;
     bool readFailed=true;
+    sp_return res;
 
     for(int i=0;i<10;i++)
     {
-        serial << "?";
+        if (SP_OK != sp_flush(port, SP_BUF_BOTH))
+        {
+            cout << "Warning: Could not flush buffers!" << endl;
+        }
+        if ((res = sp_blocking_write(port, "?", 1, TIMEOUT)) < SP_OK)
+        {
+            cout << "Unable to write to port: " << res << endl;
+            return -1;
+        }
 
         for(int j=0;j<2;j++)
         {
-            serial.get(c);
+            if ((res = sp_blocking_read(port, &c, 1, TIMEOUT)) < SP_OK)
+            {
+                cout << "Unable to read data from port: " << res << endl;
+            }
             if(c == 0 && readFailed==true)
             {
                 j=2;
@@ -109,7 +160,15 @@ int Data::detectEAR(std::string device)
         }
     }
     cout << buf << endl;
-    serial.Close();
+
+    // Wait for the additional CR/LF to come in.
+    usleep(500);
+    char discard[2];
+    sp_blocking_read(port, discard, 2, TIMEOUT);
+    if (SP_OK != sp_flush(port, SP_BUF_BOTH))
+    {
+        cout << "Warning: Could not flush buffers!" << endl;
+    }
 
     if(buf == "WX")
     {
@@ -184,35 +243,51 @@ bool Data::loadEvents()
 
 void Data::sendTest(std::string device)
 {
-    SerialStream serial(device, std::ios::in|std::ios::out);
-    serial.SetBaudRate(SerialStreamBuf::BAUD_2400);
-    serial.SetNumOfStopBits(1);
-    serial.SetParity(SerialStreamBuf::PARITY_NONE);
-    serial.SetCharSize(SerialStreamBuf::CHAR_SIZE_8);
-    serial.SetFlowControl(SerialStreamBuf::FLOW_CONTROL_NONE);
-    serial.SetVTime(50);
-    serial.SetVMin(0);
-    serial << "t";
-    serial.Close();
+    if (SP_OK != openPort(device)) {
+        cout << "Unable to open port " << device << endl;
+        return;
+    }
+    sp_return res;
+    if (SP_OK != sp_flush(port, SP_BUF_BOTH))
+    {
+        cout << "Warning: Could not flush buffers!" << endl;
+    }
+    if ((res = sp_blocking_write(port, "t", 1, TIMEOUT)) < SP_OK)
+    {
+        cout << "Unable to write to port: " << res << endl;
+        return;
+    }
+    if (SP_OK != sp_flush(port, SP_BUF_BOTH))
+    {
+        cout << "Warning: Could not flush buffers!" << endl;
+    }
 }
 
 void Data::programData(std::string device, std::string data, QProgressBar &bar)
 {
-    SerialStream serial(device, std::ios::in|std::ios::out);
-    serial.SetBaudRate(SerialStreamBuf::BAUD_2400);
-    serial.SetNumOfStopBits(1);
-    serial.SetParity(SerialStreamBuf::PARITY_NONE);
-    serial.SetCharSize(SerialStreamBuf::CHAR_SIZE_8);
-    serial.SetFlowControl(SerialStreamBuf::FLOW_CONTROL_NONE);
-    serial.SetVTime(50);
-    serial.SetVMin(0);
+    if (SP_OK != openPort(device)) {
+        cout << "Unable to open port " << device << endl;
+        return;
+    }
     char c=0;
     bool readFailed=true;
+    sp_return res;
 
     for(int i=0;i<10;i++)
     {
-        serial << "p";
-        serial.get(c);
+        if (SP_OK != sp_flush(port, SP_BUF_BOTH))
+        {
+            cout << "Warning: Could not flush buffers!" << endl;
+        }
+        if ((res = sp_blocking_write(port, "p", 1, TIMEOUT)) < SP_OK)
+        {
+            cout << "Unable to write to port: " << res << endl;
+            return;
+        }
+        if ((res = sp_blocking_read(port, &c, 1, TIMEOUT)) < SP_OK)
+        {
+            cout << "Unable to read data from port: " << res << endl;
+        }
         if(c == 0 && readFailed==true)
         {
             usleep(50);
@@ -226,12 +301,19 @@ void Data::programData(std::string device, std::string data, QProgressBar &bar)
     if(readFailed)
     {
         cout << "Failed writing to device" << endl;
-        serial.Close();
+        if (SP_OK != sp_flush(port, SP_BUF_BOTH))
+        {
+            cout << "Warning: Could not flush buffers!" << endl;
+        }
         return;
     }
     for(int i=0;i<512;i++)
     {
-        serial << data[i];
+        if ((res = sp_blocking_write(port, &(data[i]), 1, TIMEOUT)) < SP_OK)
+        {
+            cout << "Unable to write to port: " << res << endl;
+            return;
+        }
         bar.setValue((i+1)*100/512);
         QApplication::processEvents();
         usleep(10000);
@@ -240,7 +322,10 @@ void Data::programData(std::string device, std::string data, QProgressBar &bar)
     readFailed=true;
     for(int i=0;i<10;i++)
     {
-        serial.get(c);
+        if ((res = sp_blocking_read(port, &c, 1, TIMEOUT)) < SP_OK)
+        {
+            cout << "Unable to read data from port: " << res << endl;
+        }
         if(c == 0 && readFailed==true)
         {
             usleep(50);
@@ -254,5 +339,94 @@ void Data::programData(std::string device, std::string data, QProgressBar &bar)
     if(readFailed) {
         cout << "Failed finishing programming: " << c << endl;
     }
-    serial.Close();
+    if (SP_OK != sp_flush(port, SP_BUF_BOTH))
+    {
+        cout << "Warning: Could not flush buffers!" << endl;
+    }
+}
+
+sp_return Data::openPort(std::string device)
+{
+    sp_return res = SP_OK;
+    if (!port)
+    {
+        res = sp_get_port_by_name(device.c_str(), &port);
+        if (SP_OK != res)
+        {
+            cout << "Failed to find port " << device << endl;
+            return res;
+        }
+        res = sp_open(port, SP_MODE_READ_WRITE);
+        if (SP_OK != res)
+        {
+            cout << "Failed to open port " << device << endl;
+            return res;
+        }
+        res = sp_new_config(&config);
+        if (SP_OK != res)
+        {
+            throw std::runtime_error("Unable to allocate serial port config");
+        }
+        res = sp_get_config(port, config);
+        if (SP_OK != res)
+        {
+            cout << "Failed to get port config" << endl;
+            return res;
+        }
+        res = sp_set_config_baudrate(config, 2400);
+        if (SP_OK != res)
+        {
+            throw std::runtime_error("Unable to set config baud rate");
+        }
+        res = sp_set_config_bits(config, 8);
+        if (SP_OK != res)
+        {
+            throw std::runtime_error("Unable to set config bits");
+        }
+        res = sp_set_config_parity(config, SP_PARITY_NONE);
+        if (SP_OK != res)
+        {
+            throw std::runtime_error("Unable to set config parity");
+        }
+        res = sp_set_config_stopbits(config, 1);
+        if (SP_OK != res)
+        {
+            throw std::runtime_error("Unable to set config stop bits");
+        }
+        res = sp_set_config_flowcontrol(config, SP_FLOWCONTROL_NONE);
+        if (SP_OK != res)
+        {
+            throw std::runtime_error("Unable to set config flow control");
+        }
+        res = sp_set_config(port, config);
+        if (SP_OK != res)
+        {
+            cout << "Failed to set port config" << endl;
+            return res;
+        }
+        sp_free_config(config);
+        config = NULL;
+    }
+    return res;
+}
+
+sp_return Data::closePort()
+{
+    sp_return res = SP_OK;
+    if (port)
+    {
+        res = sp_flush(port, SP_BUF_BOTH);
+        if (SP_OK != res)
+        {
+            cout << "Warning: Could not flush port" << endl;
+        }
+        res = sp_close(port);
+        if (SP_OK != res)
+        {
+            cout << "Warning: Could not close port" << endl;
+        }
+        sp_free_port(port);
+        port = NULL;
+    }
+    return res;
 }

@@ -23,15 +23,17 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <SerialStream.h>
 #include <string>
 #include <vector>
-#include <QtGui/QProgressBar>
+#include <QProgressBar>
 #include <QApplication>
+#include <libserialport.h>
 
-#define WX_EAR 0
-#define FM_EAR 1
-#define F2_EAR 2
+enum {
+    WX_EAR = 0,
+    FM_EAR = 1,
+    F2_EAR = 2
+} ear_types;
 
 struct sEvent
 {
@@ -50,6 +52,9 @@ struct sFIPS
 class Data
 {
     public:
+        Data();
+        ~Data();
+        std::vector<std::string> listPorts();
         std::string readData(std::string device, QProgressBar &bar);
         int detectEAR(std::string device);
         bool loadFIPS();
@@ -58,6 +63,11 @@ class Data
         void programData(std::string device, std::string cfg, QProgressBar &bar);
         std::vector<sFIPS> fips;
         std::vector<sEvent> events;
+    private:
+        sp_return openPort(std::string device);
+        sp_return closePort();
+        sp_port_config* config;
+        sp_port* port;
 };
 
 #endif
