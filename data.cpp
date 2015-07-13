@@ -27,13 +27,30 @@ using namespace std;
 
 static const int TIMEOUT = 50;
 
-Data::Data() : config(NULL), port(NULL)
+Data::Data() : config(NULL), port(NULL), pauseRead(true)
 {
 }
 
 Data::~Data()
 {
     closePort();
+}
+
+int Data::findEAR()
+{
+    int EARtype = -1;
+    std::vector<std::string> ports = listPorts();
+    for (std::vector<std::string>::iterator it = ports.begin(); it != ports.end(); it++)
+    {
+        if (SP_OK == openPort(*it)) {
+            if ((EARtype = detectEAR()) != -1)
+            {
+                return EARtype;
+            }
+        }
+        closePort();
+    }
+    return -1;
 }
 
 std::vector<std::string> Data::listPorts()
@@ -58,14 +75,11 @@ std::vector<std::string> Data::listPorts()
     return result;
 }
 
-string Data::readData(std::string device, QProgressBar &bar)
+string Data::readData(QProgressBar &bar)
 {
     string buf;
+    pauseRead = true;
 
-    if (SP_OK != openPort(device)) {
-        cout << "Unable to open port " << device << endl;
-        return buf;
-    }
     char c=0;
     bool readFailed=true;
     sp_return res;
@@ -79,6 +93,7 @@ string Data::readData(std::string device, QProgressBar &bar)
         if ((res = sp_nonblocking_write(port, "d", 1)) < SP_OK)
         {
             cout << "Unable to write to port: " << res << endl;
+            pauseRead = false;
             return buf;
         }
 
@@ -112,17 +127,15 @@ string Data::readData(std::string device, QProgressBar &bar)
         cout << "Warning: Could not flush buffers!" << endl;
     }
 
+    pauseRead = false;
     return buf;
 }
 
-int Data::detectEAR(std::string device)
+int Data::detectEAR()
 {
     string buf;
 
-    if (SP_OK != openPort(device)) {
-        cout << "Unable to open port " << device << endl;
-        return -1;
-    }
+    pauseRead = true;
     char c=0;
     bool readFailed=true;
     sp_return res;
@@ -136,6 +149,7 @@ int Data::detectEAR(std::string device)
         if ((res = sp_nonblocking_write(port, "?", 1)) < SP_OK)
         {
             cout << "Unable to write to port: " << res << endl;
+            pauseRead = false;
             return -1;
         }
 
@@ -171,6 +185,8 @@ int Data::detectEAR(std::string device)
     {
         cout << "Warning: Could not flush buffers!" << endl;
     }
+
+    pauseRead = false;
 
     if(buf == "WX")
     {
@@ -243,12 +259,8 @@ bool Data::loadEvents()
     return true;
 }
 
-void Data::sendTest(std::string device)
+void Data::sendTest()
 {
-    if (SP_OK != openPort(device)) {
-        cout << "Unable to open port " << device << endl;
-        return;
-    }
     sp_return res;
     if (SP_OK != sp_flush(port, SP_BUF_BOTH))
     {
@@ -259,18 +271,11 @@ void Data::sendTest(std::string device)
         cout << "Unable to write to port: " << res << endl;
         return;
     }
-    if (SP_OK != sp_flush(port, SP_BUF_BOTH))
-    {
-        cout << "Warning: Could not flush buffers!" << endl;
-    }
 }
 
-void Data::programData(std::string device, std::string data, QProgressBar &bar)
+void Data::programData(std::string data, QProgressBar &bar)
 {
-    if (SP_OK != openPort(device)) {
-        cout << "Unable to open port " << device << endl;
-        return;
-    }
+    pauseRead = true;
     char c=0;
     bool readFailed=true;
     sp_return res;
@@ -284,6 +289,7 @@ void Data::programData(std::string device, std::string data, QProgressBar &bar)
         if ((res = sp_nonblocking_write(port, "p", 1)) < SP_OK)
         {
             cout << "Unable to write to port: " << res << endl;
+            pauseRead = false;
             return;
         }
         if ((res = sp_blocking_read(port, &c, 1, TIMEOUT)) < SP_OK)
@@ -307,6 +313,7 @@ void Data::programData(std::string device, std::string data, QProgressBar &bar)
         {
             cout << "Warning: Could not flush buffers!" << endl;
         }
+        pauseRead = false;
         return;
     }
     for(int i=0;i<512;i++)
@@ -348,6 +355,26 @@ void Data::programData(std::string device, std::string data, QProgressBar &bar)
     {
         cout << "Warning: Could not flush buffers!" << endl;
     }
+    pauseRead = false;
+}
+
+string Data::readData()
+{
+    sp_return res = SP_OK;
+    char buffer[512];
+    string output;
+    if (port && !pauseRead)
+    {
+        if ((res = sp_blocking_read(port, buffer, 512, TIMEOUT)) < SP_OK)
+        {
+            cout << "Unable to read data from port: " << res << endl;
+        }
+        if ( res > 0 )
+        {
+            output.append(buffer, res);
+        }
+    }
+    return output;
 }
 
 int Data::openPort(std::string device)
@@ -411,6 +438,7 @@ int Data::openPort(std::string device)
         }
         sp_free_config(config);
         config = NULL;
+        pauseRead = false;
     }
     return res;
 }
@@ -420,6 +448,7 @@ int Data::closePort()
     sp_return res = SP_OK;
     if (port)
     {
+        pauseRead = true;
         res = sp_flush(port, SP_BUF_BOTH);
         if (SP_OK != res)
         {

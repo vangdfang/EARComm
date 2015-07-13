@@ -22,9 +22,10 @@
 #define EARCOMM_H
 
 #include <QMainWindow>
-#include <QComboBox>
-#include <QMessageBox>
 #include "data.h"
+
+class QComboBox;
+class QTimer;
 
 namespace Ui
 {
@@ -41,6 +42,7 @@ public:
 
 private:
     Ui::EARComm *ui;
+    QTimer *timer;
     Data d;
     int EARtype;
     void updateFrequencyList();
@@ -58,6 +60,7 @@ private slots:
     void on_readButton_clicked();
     void on_programButton_clicked();
     void on_testButton_clicked();
+    void updateEvents();
 };
 
 #endif // EARCOMM_H

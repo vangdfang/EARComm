@@ -56,20 +56,23 @@ class Data
     public:
         Data();
         ~Data();
-        std::vector<std::string> listPorts();
-        std::string readData(std::string device, QProgressBar &bar);
-        int detectEAR(std::string device);
+        int findEAR();
+        std::string readData(QProgressBar &bar);
         bool loadFIPS();
         bool loadEvents();
-        void sendTest(std::string device);
-        void programData(std::string device, std::string cfg, QProgressBar &bar);
+        void sendTest();
+        void programData(std::string cfg, QProgressBar &bar);
+        std::string readData();
         std::vector<sFIPS> fips;
         std::vector<sEvent> events;
     private:
         int openPort(std::string device);
         int closePort();
+        std::vector<std::string> listPorts();
+        int detectEAR();
         sp_port_config* config;
         sp_port* port;
+        bool pauseRead;
 };
 
 #endif

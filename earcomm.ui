@@ -347,14 +347,23 @@
     <string>Device:</string>
    </property>
   </widget>
-  <widget class="QComboBox" name="device">
+  <widget class="QLabel" name="device">
    <property name="geometry">
     <rect>
      <x>60</x>
      <y>260</y>
-     <width>211</width>
+     <width>201</width>
      <height>21</height>
     </rect>
+   </property>
+   <property name="font">
+    <font>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string/>
    </property>
   </widget>
  </widget>

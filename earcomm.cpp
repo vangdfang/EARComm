@@ -20,6 +20,9 @@
 
 #include "earcomm.h"
 #include "ui_earcomm.h"
+#include <QComboBox>
+#include <QMessageBox>
+#include <QTimer>
 
 EARComm::EARComm(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::EARComm)
@@ -32,11 +35,35 @@ EARComm::EARComm(QWidget *parent)
 
     ui->setupUi(this);
 
-    std::vector<std::string> ports = d.listPorts();
-    for (std::vector<std::string>::iterator it = ports.begin(); it != ports.end(); it++)
+    EARtype = d.findEAR();
+    if(EARtype == -1)
     {
-        ui->device->addItem(QString::fromStdString(*it));
+        // error
+        QMessageBox err(QMessageBox::Warning, "Error", "Could not detect EAR type.  Check that EAR is connected, the device is correct, and try again.", QMessageBox::Ok );
+        std::cout << "Error reading EAR type -- EAR may not be connected" << std::endl;
+        err.exec();
     }
+
+    switch (EARtype)
+    {
+        case WX_EAR:
+            ui->device->setText("Weather EAR");
+            break;
+        case FM_EAR:
+            ui->device->setText("FM EAR");
+            break;
+        case F2_EAR:
+            ui->device->setText("FM EAR (rev 2)");
+            break;
+        default:
+            ui->device->setText("No EAR detected!");
+    }
+
+    updateFrequencyList();
+
+    timer = new QTimer(this);
+    connect(timer, SIGNAL(timeout()), this, SLOT(updateEvents()));
+    timer->start(500);
 
     updateFrequencyList();
 
@@ -229,24 +256,7 @@ void EARComm::updateFrequencyList()
 
 void EARComm::on_readButton_clicked()
 {
-    int tmpEARtype;
-    tmpEARtype = d.detectEAR(ui->device->currentText().toStdString());
-    if(tmpEARtype == -1)
-    {
-        // error
-        QMessageBox err(QMessageBox::Warning, "Error", "Could not detect EAR type.  Check that EAR is connected, the device is correct, and try again.", QMessageBox::Ok );
-        std::cout << "Error reading EAR type -- EAR may not be connected" << std::endl;
-        err.exec();
-        return;
-    }
-    else
-    {
-        EARtype = tmpEARtype;
-    }
-
-    updateFrequencyList();
-
-    std::string cfg = d.readData(ui->device->currentText().toStdString(), *(ui->programStatus));
+    std::string cfg = d.readData(*(ui->programStatus));
     if(cfg.length() == 0)
     {
         // error
@@ -417,7 +427,7 @@ void EARComm::on_programButton_clicked()
         buf.append("\x01");
     }
     std::cout << buf.toStdString() << std::endl;
-    d.programData(ui->device->currentText().toStdString(), buf.toStdString(), *(ui->programStatus));
+    d.programData(buf.toStdString(), *(ui->programStatus));
 }
 
 // This function handles determining the Synth Setup bytes
@@ -474,10 +484,32 @@ std::string EARComm::getSynthSetup(int channel)
 
 void EARComm::on_testButton_clicked()
 {
-    d.sendTest(ui->device->currentText().toStdString());
+    d.sendTest();
+}
+
+void EARComm::updateEvents()
+{
+    // Read event from serial port
+    std::string buffer = d.readData();
+    if (buffer.length() > 0)
+    {
+        size_t start, end;
+        if(std::string::npos != (start = buffer.find("ZCZC", 0))) {
+            std::string event;
+            while(std::string::npos == (end = buffer.find("NNNN", 0))) {
+                buffer.append(d.readData());
+            }
+            // Good, full event.
+            //event = buffer.substr(start, end - start);
+            std::cout << buffer << std::endl;
+            std::cout << "start: " << start << ", end: " << end << std::endl;
+        }
+    }
 }
 
 EARComm::~EARComm()
 {
+    timer->stop();
+    delete timer;
     delete ui;
 }
