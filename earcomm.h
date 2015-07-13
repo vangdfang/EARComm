@@ -61,6 +61,7 @@ private slots:
     void on_programButton_clicked();
     void on_testButton_clicked();
     void updateEvents();
+    void parseSAME(const std::string &data);
 };
 
 #endif // EARCOMM_H

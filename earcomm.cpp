@@ -23,6 +23,7 @@
 #include <QComboBox>
 #include <QMessageBox>
 #include <QTimer>
+#include <sstream>
 
 EARComm::EARComm(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::EARComm)
@@ -61,6 +62,7 @@ EARComm::EARComm(QWidget *parent)
 
     updateFrequencyList();
 
+    ui->events->setPlainText("Listening for incoming events...\n");
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(updateEvents()));
     timer->start(500);
@@ -149,10 +151,10 @@ void EARComm::populateRegionList(QComboBox &regionBox)
 
 void EARComm::populateStateList(std::string state, std::string code)
 {
-    ui->FIPS1St->addItem(QString(state.c_str()), QString(code.c_str()));
-    ui->FIPS2St->addItem(QString(state.c_str()), QString(code.c_str()));
-    ui->FIPS3St->addItem(QString(state.c_str()), QString(code.c_str()));
-    ui->FIPS4St->addItem(QString(state.c_str()), QString(code.c_str()));
+    ui->FIPS1St->addItem(QString::fromStdString(state), QString::fromStdString(code));
+    ui->FIPS2St->addItem(QString::fromStdString(state), QString::fromStdString(code));
+    ui->FIPS3St->addItem(QString::fromStdString(state), QString::fromStdString(code));
+    ui->FIPS4St->addItem(QString::fromStdString(state), QString::fromStdString(code));
 }
 
 void EARComm::on_FIPS1St_currentIndexChanged(const QString &text)
@@ -267,46 +269,46 @@ void EARComm::on_readButton_clicked()
     }
     int idx;
 
-    idx = ui->FIPS1Reg->findData(QString(cfg.substr(238,1).c_str()));
+    idx = ui->FIPS1Reg->findData(QString::fromStdString(cfg.substr(238,1)));
     idx = ( idx == -1 ) ? 0 : idx;
     ui->FIPS1Reg->setCurrentIndex(idx);
-    idx = ui->FIPS2Reg->findData(QString(cfg.substr(244,1).c_str()));
+    idx = ui->FIPS2Reg->findData(QString::fromStdString(cfg.substr(244,1)));
     idx = ( idx == -1 ) ? 0 : idx;
     ui->FIPS2Reg->setCurrentIndex(idx);
-    idx = ui->FIPS3Reg->findData(QString(cfg.substr(250,1).c_str()));
+    idx = ui->FIPS3Reg->findData(QString::fromStdString(cfg.substr(250,1)));
     idx = ( idx == -1 ) ? 0 : idx;
     ui->FIPS3Reg->setCurrentIndex(idx);
-    idx = ui->FIPS4Reg->findData(QString(cfg.substr(256,1).c_str()));
+    idx = ui->FIPS4Reg->findData(QString::fromStdString(cfg.substr(256,1)));
     idx = ( idx == -1 ) ? 0 : idx;
     ui->FIPS4Reg->setCurrentIndex(idx);
 
-    idx = ui->FIPS1St->findData(QString(cfg.substr(239,2).c_str()));
+    idx = ui->FIPS1St->findData(QString::fromStdString(cfg.substr(239,2)));
     idx = ( idx == -1 ) ? 0 : idx;
     ui->FIPS1St->setCurrentIndex(idx);
     updateRegionList(*(ui->FIPS1Reg), ui->FIPS1St->currentText());
-    idx = ui->FIPS2St->findData(QString(cfg.substr(245,2).c_str()));
+    idx = ui->FIPS2St->findData(QString::fromStdString(cfg.substr(245,2)));
     idx = ( idx == -1 ) ? 0 : idx;
     ui->FIPS2St->setCurrentIndex(idx);
     updateRegionList(*(ui->FIPS2Reg), ui->FIPS2St->currentText());
-    idx = ui->FIPS3St->findData(QString(cfg.substr(251,2).c_str()));
+    idx = ui->FIPS3St->findData(QString::fromStdString(cfg.substr(251,2)));
     idx = ( idx == -1 ) ? 0 : idx;
     updateRegionList(*(ui->FIPS3Reg), ui->FIPS3St->currentText());
     ui->FIPS3St->setCurrentIndex(idx);
-    idx = ui->FIPS4St->findData(QString(cfg.substr(257,2).c_str()));
+    idx = ui->FIPS4St->findData(QString::fromStdString(cfg.substr(257,2)));
     idx = ( idx == -1 ) ? 0 : idx;
     ui->FIPS4St->setCurrentIndex(idx);
     updateRegionList(*(ui->FIPS4Reg), ui->FIPS4St->currentText());
 
-    idx = ui->FIPS1->findData(QString(cfg.substr(241,3).c_str()));
+    idx = ui->FIPS1->findData(QString::fromStdString(cfg.substr(241,3)));
     idx = ( idx == -1 ) ? 0 : idx;
     ui->FIPS1->setCurrentIndex(idx);
-    idx = ui->FIPS2->findData(QString(cfg.substr(247,3).c_str()));
+    idx = ui->FIPS2->findData(QString::fromStdString(cfg.substr(247,3)));
     idx = ( idx == -1 ) ? 0 : idx;
     ui->FIPS2->setCurrentIndex(idx);
-    idx = ui->FIPS3->findData(QString(cfg.substr(253,3).c_str()));
+    idx = ui->FIPS3->findData(QString::fromStdString(cfg.substr(253,3)));
     idx = ( idx == -1 ) ? 0 : idx;
     ui->FIPS3->setCurrentIndex(idx);
-    idx = ui->FIPS4->findData(QString(cfg.substr(259,3).c_str()));
+    idx = ui->FIPS4->findData(QString::fromStdString(cfg.substr(259,3)));
     idx = ( idx == -1 ) ? 0 : idx;
     ui->FIPS4->setCurrentIndex(idx);
 
@@ -322,7 +324,7 @@ void EARComm::on_readButton_clicked()
 
     for(int i=0; i<80; i++)
     {
-        QList<QTableWidgetItem*> res = ui->eventCodes->findItems(QString(cfg.substr(271+3*i,3).c_str()), Qt::MatchExactly);
+        QList<QTableWidgetItem*> res = ui->eventCodes->findItems(QString::fromStdString(cfg.substr(271+3*i,3)), Qt::MatchExactly);
         if(!res.isEmpty())
         {
             ui->eventCodes->selectRow(res[0]->row());
@@ -386,8 +388,8 @@ void EARComm::on_programButton_clicked()
         buf.append("\x01\x01\x01\x01");
     }
     else {
-        buf.append(QString(getSynthSetup(ui->priFreq->itemData(ui->priFreq->currentIndex()).toInt()).c_str()));
-        buf.append(QString(getSynthSetup(ui->priFreq->itemData(ui->altFreq->currentIndex()).toInt()).c_str()));
+        buf.append(QString::fromStdString(getSynthSetup(ui->priFreq->itemData(ui->priFreq->currentIndex()).toInt())));
+        buf.append(QString::fromStdString(getSynthSetup(ui->priFreq->itemData(ui->altFreq->currentIndex()).toInt())));
     }
     if(ui->eomSwitch->checkState() == Qt::Checked)
     {
@@ -496,14 +498,219 @@ void EARComm::updateEvents()
         size_t start, end;
         if(std::string::npos != (start = buffer.find("ZCZC", 0))) {
             std::string event;
-            while(std::string::npos == (end = buffer.find("NNNN", 0))) {
+            time_t now, waitUntil;
+            time(&now);
+            // Wait no more than 120 seconds for full message.
+            waitUntil = now + 120;
+            while(std::string::npos == (end = buffer.find("NNNN", 0)) && now <= waitUntil) {
                 buffer.append(d.readData());
+                time(&now);
             }
-            // Good, full event.
-            //event = buffer.substr(start, end - start);
-            std::cout << buffer << std::endl;
-            std::cout << "start: " << start << ", end: " << end << std::endl;
+            // Good, full event (or as much as we may have received..
+            event = buffer.substr(start, end - start);
+            parseSAME(event);
         }
+    }
+}
+
+void EARComm::parseSAME(const std::string &data)
+{
+    // SAME data is sent three times with no error
+    // correction: we'll try parsing the message for
+    // each instance of the data we get, and if we get
+    // a valid message (as best as we can tell), we
+    // will update the user.
+    size_t start = 0;
+    std::stringstream parsed;
+
+    std::cout << "Parsing: " << data << std::endl;
+    while (std::string::npos != (start = data.find("ZCZC", start)))
+    {
+        parsed.str("");
+        size_t token = start + 5;
+        start++;
+        std::string buffer = data.substr(token, 3);
+        token += 4;
+        if (buffer == "PEP")
+        {
+            parsed << "The PRIMARY ENTRY POINT has issued a ";
+        }
+        else if (buffer == "CIV")
+        {
+            parsed << "CIVIL AUTHORITIES have issued a ";
+        }
+        if (buffer == "WXR")
+        {
+            parsed << "The NATIONAL WEATHER SERVICE has issued a ";
+        }
+        if (buffer == "EAS")
+        {
+            parsed << "A BROADCAST STATION has issued a ";
+        }
+        if (buffer == "EAN")
+        {
+            parsed << "The EMERGENCY ACTION NOTIFICATION NETWORK has issued a ";
+        }
+        buffer = data.substr(token, 3);
+        token += 4;
+        std::vector<sEvent>::iterator eventIter = d.events.begin();
+        bool foundEvent = false;
+        while (eventIter != d.events.end())
+        {
+            if ((*eventIter).eventCode == buffer)
+            {
+                parsed << (*eventIter).eventText;
+                parsed << " for ";
+                foundEvent = true;
+            }
+            ++eventIter;
+        }
+
+        size_t lastLocation = data.find("+", token);
+        bool validLocations = true;
+        while (token < lastLocation)
+        {
+            char region = data.at(token);
+            std::string state = data.substr(token+1, 2);
+            std::string county = data.substr(token+3, 3);
+            token += 7;
+            bool regionValid = true;
+            switch (region)
+            {
+                case '0':
+                    // Not sub-region
+                    break;
+                case '1':
+                    parsed << "NORTHWEST ";
+                    break;
+                case '2':
+                    parsed << "NORTH ";
+                    break;
+                case '3':
+                    parsed << "NORTHEAST ";
+                    break;
+                case '4':
+                    parsed << "WEST ";
+                    break;
+                case '5':
+                    parsed << "CENTRAL ";
+                    break;
+                case '6':
+                    parsed << "EAST ";
+                    break;
+                case '7':
+                    parsed << "SOUTHWEST ";
+                    break;
+                case '8':
+                    parsed << "SOUTH ";
+                    break;
+                case '9':
+                    parsed << "SOUTHEAST ";
+                    break;
+                default:
+                    regionValid = false;
+            }
+            if (state == "00" && county == "000")
+            {
+                parsed << "ALL REGIONS";
+            }
+            else
+            {
+                std::vector<sFIPS>::iterator fipsIter = d.fips.begin();
+                while (fipsIter != d.fips.end())
+                {
+                    if ((*fipsIter).stateCode == state && (*fipsIter).countyCode == county)
+                    {
+                        parsed << (*fipsIter).county;
+                        parsed << " ";
+                        parsed << (*fipsIter).state;
+                        break;
+                    }
+                    if ((*fipsIter).stateCode == state && county == "000")
+                    {
+                        parsed << "ALL COUNTIES IN ";
+                        parsed << (*fipsIter).state;
+                        break;
+                    }
+                    ++fipsIter;
+                }
+                if (fipsIter == d.fips.end() || !regionValid)
+                {
+                    validLocations = false;
+                }
+            }
+            if (token < lastLocation)
+            {
+                parsed << ", ";
+            }
+        }
+        if (foundEvent && validLocations && std::string::npos != lastLocation)
+        {
+            token = lastLocation + 1;
+            std::string purge = data.substr(token, 4);
+            token += 5;
+            std::string issue = data.substr(token, 7);
+            token += 8;
+            size_t lastToken = data.find("-", token);
+            std::string station = data.substr(token, lastToken - token);
+            parsed << ". Message sent by ";
+            parsed << station;
+            parsed << " at ";
+            struct tm issueTime, tmpTime;
+            struct tm *currentTime;
+            time_t now;
+            char timeBuffer[255];
+            memset(&issueTime, 0, sizeof(issueTime));
+            memset(&tmpTime, 0, sizeof(tmpTime));
+            time(&now);
+            currentTime = localtime(&now);
+            strftime(timeBuffer, 255, "%a, %d %b %Y %T %z", currentTime);
+            std::string currentTimeString(timeBuffer);
+            memcpy(&issueTime, currentTime, sizeof(issueTime));
+            issueTime.tm_sec = 0;
+            std::stringstream splitTime;
+            splitTime << issue.substr(0,3);
+            splitTime << "-";
+            splitTime << issue.substr(3,2);
+            splitTime << "-";
+            splitTime << issue.substr(5,2);
+            splitTime << "-";
+            splitTime << currentTime->tm_year;
+            if (NULL == strptime(splitTime.str().c_str(), "%j-%H-%M-%Y", &tmpTime))
+            {
+                std::cout << "failed to parse: " << splitTime.str() << std::endl;
+            }
+            issueTime.tm_mday = tmpTime.tm_mday;
+            issueTime.tm_mon = tmpTime.tm_mon;
+            issueTime.tm_wday = tmpTime.tm_wday;
+            issueTime.tm_yday = tmpTime.tm_yday;
+            issueTime.tm_hour = tmpTime.tm_hour;
+            issueTime.tm_min = tmpTime.tm_min;
+
+            strftime(timeBuffer, 255, "%a, %d %b %Y %T %z", &issueTime);
+            parsed << timeBuffer;
+            parsed << "; message no longer valid at ";
+            splitTime.str("");
+            splitTime << purge.substr(0, 2);
+            splitTime << ":";
+            splitTime << purge.substr(2, 2);
+            memset(&tmpTime, 0, sizeof(tmpTime));
+            if (NULL == strptime(splitTime.str().c_str(), "%H:%M", &tmpTime))
+            {
+                std::cout << "failed to parse: " << splitTime.str() << std::endl;
+            }
+            struct tm *expireTime;
+            time_t expireAt = mktime(&issueTime) + tmpTime.tm_min * 60 + tmpTime.tm_sec;
+            expireTime = localtime(&expireAt);
+            strftime(timeBuffer, 255, "%a, %d %b %Y %T %z", expireTime);
+            parsed << timeBuffer;
+            parsed << ". Current time: ";
+            parsed << currentTimeString;
+            ui->events->setPlainText(ui->events->toPlainText() + "\n\n" + QString::fromStdString(parsed.str()));
+            ui->events->moveCursor(QTextCursor::End);
+            break;
+        }
+
     }
 }
 
