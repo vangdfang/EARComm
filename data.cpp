@@ -76,7 +76,7 @@ string Data::readData(std::string device, QProgressBar &bar)
         {
             cout << "Warning: Could not flush buffers!" << endl;
         }
-        if ((res = sp_blocking_write(port, "d", 1, TIMEOUT)) < SP_OK)
+        if ((res = sp_nonblocking_write(port, "d", 1)) < SP_OK)
         {
             cout << "Unable to write to port: " << res << endl;
             return buf;
@@ -133,7 +133,7 @@ int Data::detectEAR(std::string device)
         {
             cout << "Warning: Could not flush buffers!" << endl;
         }
-        if ((res = sp_blocking_write(port, "?", 1, TIMEOUT)) < SP_OK)
+        if ((res = sp_nonblocking_write(port, "?", 1)) < SP_OK)
         {
             cout << "Unable to write to port: " << res << endl;
             return -1;
@@ -254,7 +254,7 @@ void Data::sendTest(std::string device)
     {
         cout << "Warning: Could not flush buffers!" << endl;
     }
-    if ((res = sp_blocking_write(port, "t", 1, TIMEOUT)) < SP_OK)
+    if ((res = sp_nonblocking_write(port, "t", 1)) < SP_OK)
     {
         cout << "Unable to write to port: " << res << endl;
         return;
@@ -281,7 +281,7 @@ void Data::programData(std::string device, std::string data, QProgressBar &bar)
         {
             cout << "Warning: Could not flush buffers!" << endl;
         }
-        if ((res = sp_blocking_write(port, "p", 1, TIMEOUT)) < SP_OK)
+        if ((res = sp_nonblocking_write(port, "p", 1)) < SP_OK)
         {
             cout << "Unable to write to port: " << res << endl;
             return;
@@ -311,10 +311,13 @@ void Data::programData(std::string device, std::string data, QProgressBar &bar)
     }
     for(int i=0;i<512;i++)
     {
-        if ((res = sp_blocking_write(port, &(data[i]), 1, TIMEOUT)) < SP_OK)
+        if ((res = sp_nonblocking_write(port, &(data[i]), 1)) <= SP_OK)
         {
-            cout << "Unable to write to port: " << res << endl;
-            return;
+            cout << "Unable to write to port: " << res << " char: " << i << endl;
+        }
+        if (SP_OK != sp_drain(port))
+        {
+            cout << "Could not flush output buffer" << endl;
         }
         bar.setValue((i+1)*100/512);
         QApplication::processEvents();
