@@ -74,21 +74,25 @@ AK,02,068,Denali
 AK,02,070,Dillingham
 AK,02,090,Fairbanks North Star
 AK,02,100,Haines
+AK,02,105,Hoonah-Angoon
 AK,02,110,Juneau
 AK,02,122,Kenai Peninsula
 AK,02,130,Ketchikan Gateway
 AK,02,150,Kodiak Island
+AK,02,158,Kusilvak
 AK,02,164,Lake and Peninsula
 AK,02,170,Matanuska-Susitna
 AK,02,180,Nome
 AK,02,185,North Slope
 AK,02,188,Northwest Arctic
-AK,02,201,Prince of Wales-Outer Ketchikan
+AK,02,195,Petersburg
+AK,02,198,Prince of Wales-Hyder
 AK,02,220,Sitka
-AK,02,232,Skagway-Hoonah-Angoon
+AK,02,230,Skagway
 AK,02,240,Southeast Fairbanks
 AK,02,261,Valdez-Cordova
 AK,02,270,Wade Hampton
+AK,02,275,Wrangell
 AK,02,280,Wrangell-Petersburg
 AK,02,282,Yakutat
 AK,02,290,Yukon-Koyukuk
@@ -2408,6 +2412,7 @@ SD,46,095,Mellette
 SD,46,097,Miner
 SD,46,099,Minnehaha
 SD,46,101,Moody
+SD,46,102,Oglala Lakota
 SD,46,103,Pennington
 SD,46,105,Perkins
 SD,46,107,Potter
