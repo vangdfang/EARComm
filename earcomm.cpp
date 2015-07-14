@@ -504,6 +504,7 @@ void EARComm::updateEvents()
             waitUntil = now + 120;
             while(std::string::npos == (end = buffer.find("NNNN", 0)) && now <= waitUntil) {
                 buffer.append(d.readData());
+                QApplication::processEvents();
                 time(&now);
             }
             // Good, full event (or as much as we may have received..
@@ -652,7 +653,10 @@ void EARComm::parseSAME(const std::string &data)
             std::string issue = data.substr(token, 7);
             token += 8;
             size_t lastToken = data.find("-", token);
-            std::string station = data.substr(token, lastToken - token);
+            size_t idLength = lastToken - token;
+            idLength = (idLength > 8) ? 8 : idLength;
+            std::string station = data.substr(token, idLength);
+            token += idLength;
             parsed << ". Message sent by ";
             parsed << station;
             parsed << " at ";
@@ -706,7 +710,11 @@ void EARComm::parseSAME(const std::string &data)
             parsed << timeBuffer;
             parsed << ". Current time: ";
             parsed << currentTimeString;
-            ui->events->setPlainText(ui->events->toPlainText() + "\n\n" + QString::fromStdString(parsed.str()));
+            // To output the original string, we need to subtract 1 (which we already added)
+            // in order to move on to the next message.
+            ui->events->setPlainText(ui->events->toPlainText() + "\n\n" +
+                QString::fromStdString(data.substr(start-1, token-(start-1))) + "\n" +
+                QString::fromStdString(parsed.str()));
             ui->events->moveCursor(QTextCursor::End);
             break;
         }
