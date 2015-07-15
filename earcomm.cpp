@@ -68,6 +68,8 @@ EARComm::EARComm(QWidget *parent)
     timer->start(500);
 
     updateFrequencyList();
+    // Test event for SAME parsing.
+    //parseSAME("ZCZC-WXR-SVR-020091-020121-029037-029095+0100-1961358-KEAX/NWS");
 
     std::vector<sEvent>::iterator eventIter = d.events.begin();
     ui->eventCodes->setRowCount(d.events.size());
@@ -667,8 +669,9 @@ void EARComm::parseSAME(const std::string &data)
             memset(&issueTime, 0, sizeof(issueTime));
             memset(&tmpTime, 0, sizeof(tmpTime));
             time(&now);
-            currentTime = localtime(&now);
-            strftime(timeBuffer, 255, "%a, %d %b %Y %T %z", currentTime);
+            currentTime = gmtime(&now);
+            struct tm *localTime = localtime(&now);;
+            strftime(timeBuffer, 255, "%a, %d %b %Y %T %z", localTime);
             std::string currentTimeString(timeBuffer);
             memcpy(&issueTime, currentTime, sizeof(issueTime));
             issueTime.tm_sec = 0;
@@ -690,8 +693,22 @@ void EARComm::parseSAME(const std::string &data)
             issueTime.tm_yday = tmpTime.tm_yday;
             issueTime.tm_hour = tmpTime.tm_hour;
             issueTime.tm_min = tmpTime.tm_min;
+            char *tz = getenv("TZ");
+            setenv("TZ", "", 1);
+            tzset();
+            time_t issueTimeEpoch = mktime(&issueTime);
+            if (tz)
+            {
+                setenv("TZ", tz, 1);
+            }
+            else
+            {
+                unsetenv("TZ");
+            }
+            tzset();
+            localTime = localtime(&issueTimeEpoch);
 
-            strftime(timeBuffer, 255, "%a, %d %b %Y %T %z", &issueTime);
+            strftime(timeBuffer, 255, "%a, %d %b %Y %T %z", localTime);
             parsed << timeBuffer;
             parsed << "; message no longer valid at ";
             splitTime.str("");
@@ -703,10 +720,9 @@ void EARComm::parseSAME(const std::string &data)
             {
                 std::cout << "failed to parse: " << splitTime.str() << std::endl;
             }
-            struct tm *expireTime;
-            time_t expireAt = mktime(&issueTime) + tmpTime.tm_min * 60 + tmpTime.tm_sec;
-            expireTime = localtime(&expireAt);
-            strftime(timeBuffer, 255, "%a, %d %b %Y %T %z", expireTime);
+            time_t expireAt = issueTimeEpoch + tmpTime.tm_hour * 60 * 60 + tmpTime.tm_min * 60;
+            localTime = localtime(&expireAt);
+            strftime(timeBuffer, 255, "%a, %d %b %Y %T %z", localTime);
             parsed << timeBuffer;
             parsed << ". Current time: ";
             parsed << currentTimeString;
