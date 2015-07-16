@@ -674,10 +674,9 @@ void EARComm::parseSAME(const std::string &data)
             time(&now);
             currentTime = gmtime(&now);
             struct tm *localTime = localtime(&now);
-            strftime(timeBuffer, 255, "%a, %d %b %Y %T %z", localTime);
+            strftime(timeBuffer, 255, "%a, %d %b %Y %H:%M:%S %z", localTime);
             std::string currentTimeString(timeBuffer);
             memset(&issueTime, 0, sizeof(issueTime));
-            issueTime.tm_isdst = currentTime->tm_isdst;
             std::stringstream splitTime;
             splitTime << issue.substr(0,3);
             splitTime << "-";
@@ -692,6 +691,10 @@ void EARComm::parseSAME(const std::string &data)
             }
             // NOTE: Due to BSD-derived OSes being lazy, %j only parses
             // into tm_yday.  So, figure out when we really exist.
+            // Also, Windows doesn't even have strptime, so we do it manually.
+            // For us, this means that tm_yday needs to be decremented, since it
+            // is bounded by [0,355], not [1,366].
+            tmpTime.tm_yday--;
             issueTime.tm_mday = 1;
             issueTime.tm_mon = 0;
             issueTime.tm_hour = tmpTime.tm_hour;
@@ -711,7 +714,7 @@ void EARComm::parseSAME(const std::string &data)
                 if (tz)
                 {
                     char tzstring[50];
-                    snprintf(&tzstring, 50, "TZ=%s", tz);
+                    snprintf(tzstring, 50, "TZ=%s", tz);
                     putenv(tzstring);
                 }
                 else
@@ -732,7 +735,7 @@ void EARComm::parseSAME(const std::string &data)
             #endif
             localTime = localtime(&issueTimeEpoch);
 
-            strftime(timeBuffer, 255, "%a, %d %b %Y %T %z", localTime);
+            strftime(timeBuffer, 255, "%a, %d %b %Y %H:%M:%S %z", localTime);
             parsed << timeBuffer;
             parsed << "; message no longer valid at ";
             splitTime.str("");
@@ -740,13 +743,13 @@ void EARComm::parseSAME(const std::string &data)
             splitTime << ":";
             splitTime << purge.substr(2, 2);
             memset(&tmpTime, 0, sizeof(tmpTime));
-            if (2 != sscanf(splitTime.str().c_str(), "%d-%d", &tmpTime.tm_hour, &tmpTime.tm_min))
+            if (2 != sscanf(splitTime.str().c_str(), "%d:%d", &tmpTime.tm_hour, &tmpTime.tm_min))
             {
                 std::cout << "failed to parse: " << splitTime.str() << std::endl;
             }
             time_t expireAt = issueTimeEpoch + tmpTime.tm_hour * 60 * 60 + tmpTime.tm_min * 60;
             localTime = localtime(&expireAt);
-            strftime(timeBuffer, 255, "%a, %d %b %Y %T %z", localTime);
+            strftime(timeBuffer, 255, "%a, %d %b %Y %H:%M:%S %z", localTime);
             parsed << timeBuffer;
             parsed << ". Current time: ";
             parsed << currentTimeString;
