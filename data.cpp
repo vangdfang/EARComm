@@ -103,7 +103,7 @@ string Data::readData(QProgressBar &bar)
             {
                 cout << "Unable to read data from port: " << res << endl;
             }
-            if (c == 0 && readFailed == true)
+            if (res == 0 && readFailed == true)
             {
                 j=512;
                 usleep(500);
@@ -153,21 +153,25 @@ int Data::detectEAR()
             return -1;
         }
 
-        for(int j=0;j<2;j++)
+        for(int j=0;j<3;j++)
         {
             if ((res = sp_blocking_read(port, &c, 1, TIMEOUT)) < SP_OK)
             {
                 cout << "Unable to read data from port: " << res << endl;
             }
-            if(c == 0 && readFailed==true)
+            if (res == 0 && readFailed==true)
             {
-                j=2;
                 usleep(50);
+                break;
             }
-            else
+            else if (c != 0)
             {
                 readFailed=false;
                 buf.append(1, c);
+            }
+            if (buf.length() == 2)
+            {
+                break;
             }
         }
         if(!readFailed)
@@ -296,11 +300,11 @@ void Data::programData(std::string data, QProgressBar &bar)
         {
             cout << "Unable to read data from port: " << res << endl;
         }
-        if(c == 0 && readFailed==true)
+        if (res == 0 && readFailed == true)
         {
             usleep(50);
         }
-        else if(c == '!')
+        else if (c == '!')
         {
             readFailed=false;
             i=10;

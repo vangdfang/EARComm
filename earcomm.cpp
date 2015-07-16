@@ -670,11 +670,11 @@ void EARComm::parseSAME(const std::string &data)
             memset(&tmpTime, 0, sizeof(tmpTime));
             time(&now);
             currentTime = gmtime(&now);
-            struct tm *localTime = localtime(&now);;
+            struct tm *localTime = localtime(&now);
             strftime(timeBuffer, 255, "%a, %d %b %Y %T %z", localTime);
             std::string currentTimeString(timeBuffer);
-            memcpy(&issueTime, currentTime, sizeof(issueTime));
-            issueTime.tm_sec = 0;
+            memset(&issueTime, 0, sizeof(issueTime));
+            issueTime.tm_isdst = currentTime->tm_isdst;
             std::stringstream splitTime;
             splitTime << issue.substr(0,3);
             splitTime << "-";
@@ -682,21 +682,22 @@ void EARComm::parseSAME(const std::string &data)
             splitTime << "-";
             splitTime << issue.substr(5,2);
             splitTime << "-";
-            splitTime << currentTime->tm_year;
+            splitTime << currentTime->tm_year + 1900;
             if (NULL == strptime(splitTime.str().c_str(), "%j-%H-%M-%Y", &tmpTime))
             {
                 std::cout << "failed to parse: " << splitTime.str() << std::endl;
             }
-            issueTime.tm_mday = tmpTime.tm_mday;
-            issueTime.tm_mon = tmpTime.tm_mon;
-            issueTime.tm_wday = tmpTime.tm_wday;
-            issueTime.tm_yday = tmpTime.tm_yday;
+            // NOTE: Due to BSD-derived OSes being lazy, %j only parses
+            // into tm_yday.  So, figure out when we really exist.
+            issueTime.tm_mday = 1;
+            issueTime.tm_mon = 0;
             issueTime.tm_hour = tmpTime.tm_hour;
             issueTime.tm_min = tmpTime.tm_min;
+            issueTime.tm_year = currentTime->tm_year;
             char *tz = getenv("TZ");
             setenv("TZ", "", 1);
             tzset();
-            time_t issueTimeEpoch = mktime(&issueTime);
+            time_t issueTimeEpoch = mktime(&issueTime) + 60*60*24*tmpTime.tm_yday;
             if (tz)
             {
                 setenv("TZ", tz, 1);
