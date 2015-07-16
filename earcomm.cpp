@@ -24,6 +24,9 @@
 #include <QMessageBox>
 #include <QTimer>
 #include <sstream>
+#include <time.h>
+#include <string.h>
+#include <stdio.h>
 
 EARComm::EARComm(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::EARComm)
@@ -683,7 +686,7 @@ void EARComm::parseSAME(const std::string &data)
             splitTime << issue.substr(5,2);
             splitTime << "-";
             splitTime << currentTime->tm_year + 1900;
-            if (NULL == strptime(splitTime.str().c_str(), "%j-%H-%M-%Y", &tmpTime))
+            if (4 != sscanf(splitTime.str().c_str(), "%d-%d-%d-%d", &tmpTime.tm_yday, &tmpTime.tm_hour, &tmpTime.tm_min, &tmpTime.tm_year))
             {
                 std::cout << "failed to parse: " << splitTime.str() << std::endl;
             }
@@ -694,19 +697,39 @@ void EARComm::parseSAME(const std::string &data)
             issueTime.tm_hour = tmpTime.tm_hour;
             issueTime.tm_min = tmpTime.tm_min;
             issueTime.tm_year = currentTime->tm_year;
-            char *tz = getenv("TZ");
-            setenv("TZ", "", 1);
-            tzset();
+            #if WIN32
+                char *tz = getenv("TZ");
+                putenv("TZ=GMT0");
+                _tzset();
+            #else
+                char *tz = getenv("TZ");
+                setenv("TZ", "", 1);
+                tzset();
+            #endif
             time_t issueTimeEpoch = mktime(&issueTime) + 60*60*24*tmpTime.tm_yday;
-            if (tz)
-            {
-                setenv("TZ", tz, 1);
-            }
-            else
-            {
-                unsetenv("TZ");
-            }
-            tzset();
+            #if WIN32
+                if (tz)
+                {
+                    char tzstring[50];
+                    snprintf(&tzstring, 50, "TZ=%s", tz);
+                    putenv(tzstring);
+                }
+                else
+                {
+                    putenv("TZ=");
+                }
+                _tzset();
+            #else
+                if (tz)
+                {
+                    setenv("TZ", tz, 1);
+                }
+                else
+                {
+                    unsetenv("TZ");
+                }
+                tzset();
+            #endif
             localTime = localtime(&issueTimeEpoch);
 
             strftime(timeBuffer, 255, "%a, %d %b %Y %T %z", localTime);
@@ -717,7 +740,7 @@ void EARComm::parseSAME(const std::string &data)
             splitTime << ":";
             splitTime << purge.substr(2, 2);
             memset(&tmpTime, 0, sizeof(tmpTime));
-            if (NULL == strptime(splitTime.str().c_str(), "%H:%M", &tmpTime))
+            if (2 != sscanf(splitTime.str().c_str(), "%d-%d", &tmpTime.tm_hour, &tmpTime.tm_min))
             {
                 std::cout << "failed to parse: " << splitTime.str() << std::endl;
             }
